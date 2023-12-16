@@ -630,9 +630,6 @@ begin
 	end
 # end
 
-# ╔═╡ 685e93b7-b46a-4b07-b8fb-c388a434ff49
-plot(title="Test", fontfamily= "Helvetica") 
-
 # ╔═╡ 923b38bb-9f09-4591-a229-6552fd756307
 begin
 	if @isdefined copd
@@ -1130,28 +1127,87 @@ begin
 	end
 end
 
-# ╔═╡ 284dd2e5-4848-4105-b01c-b8fbe05c56b1
-levelsSub_copd[df_spiro_copd.idxcopd][df.idx]
-
 # ╔═╡ 1ee7e175-1b6d-4f08-8ec7-945394e36311
-vec((CIdiff_sb[idx_avg_diff_sub, df.idx]))./1.96
+begin 
+	subnames = String.(levelsSub_copd[df_spiro_copd.idxcopd])
+	# levelsSub_copd[df_spiro_copd.idxcopd][df.idx];
+	se = vec((CIdiff_sb[idx_avg_diff_sub, :]))./1.96;
+		# vec((CIdiff_sb[idx_avg_diff_sub, df.idx]))./1.96;
+	est = vec(permutedims(avgcoef_sb[idx_avg_diff_sub, :]));
+		# vec(permutedims(avgcoef_sb[idx_avg_diff_sub, df.idx]));
+	mytstats = est./se 
+	pvalues = ccdf.(TDist(size(mXcopd, 1)-1), abs.(mytstats)).*2
+	qvalues = pval2qval(pvalues)
+	qvalues2 = pval2qval2(pvalues)
 
-# ╔═╡ e32dbdbf-3980-4c9a-81ed-ded07244c590
-vec(permutedims(avgcoef_sb[idx_avg_diff_sub, df.idx]))
+	idx_sub_sginif = findall(qvalues2 .<= 0.05)
 
-# ╔═╡ 1a03d4d6-cddd-44df-8bb7-676573addae2
-SEdiff_sb
+	df_sub_signif = DataFrame(
+		ID = subnames,
+		name = df_spiro_copd.SubPathway,
+		Tstats = mytstats,
+		Pvalues = pvalues,
+		FDR = qvalues2
+	)
+end
+
+# ╔═╡ 2facc8b7-0300-4b31-bb51-e9c4ee2b7fd6
+ccdf.(TDist(size(mXcopd, 1)-1), abs.([0.357726, 7.28])).*2
+
+# ╔═╡ c610e158-1028-47e7-877f-7a6f7e863cb3
+ccdf.(TDist(size(mXcopd, 1)-1), abs.(mytstats[1:10])).*2
+
+# ╔═╡ 4cc3ecef-a047-4362-af4b-1e7e78564823
+mytstats[1:10]
+
+# ╔═╡ 4b0bebfc-3162-427f-8430-f86eaeaa0b3c
+est
+
+# ╔═╡ d8885ae3-162d-49ea-b3f5-1030d76f73a0
+avgcoef_sb[idx_avg_diff_sub, :]
+
+# ╔═╡ b9bc72e7-e539-4715-9c75-bcd9ada7182b
+DataFrame(
+		ID = subnames,
+		name = (copy(df)).SubPathway,
+		Pvalues = pvalues,
+		FDR = qvalues2
+	)
+
+# ╔═╡ 6b89cc56-234f-4246-a200-fed293c7fffc
+CIdiff_sb[idx_avg_diff_sub, :]
+
+# ╔═╡ 97af3d9f-1ed3-4bed-a46e-1682429c6355
+# est[54]/se[54]
+
+ccdf.(TDist(size(mXcopd, 1)-1), abs.(7.28)).*2
+
+# ╔═╡ da2a35a9-1dbd-4bd5-acbc-23f51ddc250e
+String.(levelsSub_copd[df_spiro_copd.idxcopd])
+	# εcopd
+
+# ╔═╡ ddf1313f-ecef-4970-9894-3ef2c832a33a
+df_spiro_copd
+
+# ╔═╡ ea420bf4-8e1b-4633-8ac3-75fd7f73ef91
+findall(qvalues .<= 0.05)
+
+# ╔═╡ 38f8472e-5930-4ea8-ae28-73781055c08b
+histogram(pvalues)
+
+# ╔═╡ 29e5234b-0459-4531-9c5b-eff5a7eb8a67
+histogram(qvalues)
 
 # ╔═╡ 60ef862a-f67a-4ea4-ae6d-74a5d2acfe93
 begin 
-	est = xcopd
-	lo = (xcopd.-εcopd)
-	up = (xcopd.+εcopd)
+	# est = xcopd
+	# lo = (xcopd.-εcopd)
+	# up = (xcopd.+εcopd)
 
-	# se = (up .− lo)./(2*1.96)
-	# SEdiff_sb  = εcopd./1.96
-	tstats = avgcoef_sb./SEdiff_sb 
-	pvalues = ccdf.(TDist(length(tstats)-1), abs.(tstats)).*2
+	# # se = (up .− lo)./(2*1.96)
+	# # SEdiff_sb  = εcopd./1.96
+	# tstats = avgcoef_sb./SEdiff_sb 
+	# pvalues = ccdf.(TDist(length(tstats)-1), abs.(tstats)).*2
 end
 
 # ╔═╡ 37c86980-6241-4121-ba87-6a3d8dc5a1ca
@@ -3469,7 +3525,6 @@ version = "1.4.1+1"
 # ╟─a0b8461a-493f-4ee2-921b-7cc3c3b30ce4
 # ╟─b9a70c70-a560-419a-b86b-df252df9ef85
 # ╟─a321e2ce-0307-4baa-9d9e-821236a84f36
-# ╠═685e93b7-b46a-4b07-b8fb-c388a434ff49
 # ╠═923b38bb-9f09-4591-a229-6552fd756307
 # ╠═660f3468-00ba-4938-83a6-9bdbb20d4795
 # ╟─d427bc34-94a4-48bb-b880-d604a67a8d4a
@@ -3483,10 +3538,20 @@ version = "1.4.1+1"
 # ╠═0c94e2c0-3e65-47a5-9093-822ba610e9f2
 # ╟─a65d4195-8580-4a6e-985d-1afa0d407f78
 # ╠═c8f666d6-953c-4d53-99aa-6ec72fd82669
-# ╠═284dd2e5-4848-4105-b01c-b8fbe05c56b1
 # ╠═1ee7e175-1b6d-4f08-8ec7-945394e36311
-# ╠═e32dbdbf-3980-4c9a-81ed-ded07244c590
-# ╠═1a03d4d6-cddd-44df-8bb7-676573addae2
+# ╠═2facc8b7-0300-4b31-bb51-e9c4ee2b7fd6
+# ╠═c610e158-1028-47e7-877f-7a6f7e863cb3
+# ╠═4cc3ecef-a047-4362-af4b-1e7e78564823
+# ╠═4b0bebfc-3162-427f-8430-f86eaeaa0b3c
+# ╠═d8885ae3-162d-49ea-b3f5-1030d76f73a0
+# ╠═b9bc72e7-e539-4715-9c75-bcd9ada7182b
+# ╠═6b89cc56-234f-4246-a200-fed293c7fffc
+# ╠═97af3d9f-1ed3-4bed-a46e-1682429c6355
+# ╠═da2a35a9-1dbd-4bd5-acbc-23f51ddc250e
+# ╠═ddf1313f-ecef-4970-9894-3ef2c832a33a
+# ╠═ea420bf4-8e1b-4633-8ac3-75fd7f73ef91
+# ╠═38f8472e-5930-4ea8-ae28-73781055c08b
+# ╠═29e5234b-0459-4531-9c5b-eff5a7eb8a67
 # ╠═60ef862a-f67a-4ea4-ae6d-74a5d2acfe93
 # ╠═37c86980-6241-4121-ba87-6a3d8dc5a1ca
 # ╠═5d92b5bd-fc46-49d1-b1fc-c13c00433265
