@@ -1137,17 +1137,18 @@ begin
 		# vec(permutedims(avgcoef_sb[idx_avg_diff_sub, df.idx]));
 	mytstats = est./se 
 	pvalues = ccdf.(TDist(size(mXcopd, 1)-1), abs.(mytstats)).*2
-	qvalues = pval2qval(pvalues)
-	qvalues2 = pval2qval2(pvalues)
+	qvalues = pval2qval(copy(pvalues))
+	qvalues2 = pval2qval2(copy(pvalues))
 
 	idx_sub_sginif = findall(qvalues2 .<= 0.05)
 
 	df_sub_signif = DataFrame(
-		ID = subnames,
-		name = df_spiro_copd.SubPathway,
-		Tstats = mytstats,
-		Pvalues = pvalues,
-		FDR = qvalues2
+		ID = subnames[idx_sub_sginif],
+		name = df_spiro_copd.SubPathway[idx_sub_sginif],
+		B = est[idx_sub_sginif],
+		Tstats = mytstats[idx_sub_sginif],
+		Pvalues = pvalues[idx_sub_sginif],
+		FDR = qvalues2[idx_sub_sginif]
 	)
 end
 
@@ -1155,7 +1156,7 @@ end
 ccdf.(TDist(size(mXcopd, 1)-1), abs.([0.357726, 7.28])).*2
 
 # ╔═╡ c610e158-1028-47e7-877f-7a6f7e863cb3
-ccdf.(TDist(size(mXcopd, 1)-1), abs.(mytstats[1:10])).*2
+DataFrame(A = mytstats, B =ccdf.(TDist(size(mXcopd, 1)-1), abs.(mytstats)).*2)
 
 # ╔═╡ 4cc3ecef-a047-4362-af4b-1e7e78564823
 mytstats[1:10]
