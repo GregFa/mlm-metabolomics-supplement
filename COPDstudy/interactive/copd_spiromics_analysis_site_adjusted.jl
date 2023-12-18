@@ -745,7 +745,7 @@ begin
 		size = (800, 400),
 	)
 
-	plot(p1_sp, p2_sp, layout = @layout [a b])
+	plot(p1_sp, p2_sp, fontfamily = myfont, layout = @layout [a b])
 
 	savefig(string(
 		"../images/copd_mlmCI_",
@@ -754,9 +754,25 @@ begin
 		"super_class",
 		".svg")
 	)
-	plot(p1_sp, p2_sp, layout = @layout [a b])
+	plot(p1_sp, p2_sp, fontfamily = myfont,  layout = @layout [a b])
 	
 end
+
+# ╔═╡ bfbf7c4f-5aa5-4ea3-9c43-695dde42e716
+# begin
+# 	psp = plot(
+# 		psp_copd, psp_spiro,
+# 		p1_sp, p2_sp,
+# 		fontfamily = myfont,
+# 		layout = @layout [e f;g h]
+# 	)
+# 	plot(psp, size = (800, 800))
+# 	savefig(string(
+# 			"../images/",
+# 			"copd_mlmCI_full_Sex__Female_avg_diff_super_class_2.svg")
+# 		)
+# 	plot(psp, size = (800, 800))
+# end
 
 # ╔═╡ d427bc34-94a4-48bb-b880-d604a67a8d4a
 begin
@@ -929,6 +945,9 @@ end
 	
 end
 
+
+# ╔═╡ 73c3d5c3-ed48-4dc8-a9fa-f8458d851fb4
+@time getcoeffs_mlm(copd.mY, mXcopd, mZsub_copd)
 
 # ╔═╡ e09bd194-ccb2-4448-8e05-1816dc261e31
 begin 
@@ -1145,82 +1164,38 @@ begin
 	df_sub_signif = DataFrame(
 		ID = subnames[idx_sub_sginif],
 		name = df_spiro_copd.SubPathway[idx_sub_sginif],
-		B = est[idx_sub_sginif],
-		Tstats = mytstats[idx_sub_sginif],
-		Pvalues = pvalues[idx_sub_sginif],
-		FDR = qvalues2[idx_sub_sginif]
+		B = round.(est[idx_sub_sginif], digits = 2),
+		CI = string.(
+					"[",
+					round.((est.-se.*1.96)[idx_sub_sginif], digits = 3),
+					", ",
+					round.((est.+se.*1.96)[idx_sub_sginif], digits = 2),
+					"]"
+								 );
+		Tstats = round.(mytstats[idx_sub_sginif], digits = 2),
+		Pvalues = round.(pvalues[idx_sub_sginif], digits = 3),
+		FDR = round.(qvalues2[idx_sub_sginif], digits = 3)
 	)
+	sort!(df_sub_signif, [:B])
+
+			# to get the latex code :
+		latexify(
+			df_sub_signif;
+			env=:table, latex=false
+		) |> println
 end
 
-# ╔═╡ 2facc8b7-0300-4b31-bb51-e9c4ee2b7fd6
-ccdf.(TDist(size(mXcopd, 1)-1), abs.([0.357726, 7.28])).*2
-
-# ╔═╡ c610e158-1028-47e7-877f-7a6f7e863cb3
-DataFrame(A = mytstats, B =ccdf.(TDist(size(mXcopd, 1)-1), abs.(mytstats)).*2)
-
-# ╔═╡ 4cc3ecef-a047-4362-af4b-1e7e78564823
-mytstats[1:10]
-
-# ╔═╡ 4b0bebfc-3162-427f-8430-f86eaeaa0b3c
-est
-
-# ╔═╡ d8885ae3-162d-49ea-b3f5-1030d76f73a0
-avgcoef_sb[idx_avg_diff_sub, :]
+# ╔═╡ 5879e93d-380b-4de7-b6d1-1cc31d0c1f6c
+df_sub_signif
 
 # ╔═╡ b9bc72e7-e539-4715-9c75-bcd9ada7182b
 DataFrame(
 		ID = subnames,
 		name = (copy(df)).SubPathway,
+		Tstats = mytstats,
 		Pvalues = pvalues,
 		FDR = qvalues2
 	)
-
-# ╔═╡ 6b89cc56-234f-4246-a200-fed293c7fffc
-CIdiff_sb[idx_avg_diff_sub, :]
-
-# ╔═╡ 97af3d9f-1ed3-4bed-a46e-1682429c6355
-# est[54]/se[54]
-
-ccdf.(TDist(size(mXcopd, 1)-1), abs.(7.28)).*2
-
-# ╔═╡ da2a35a9-1dbd-4bd5-acbc-23f51ddc250e
-String.(levelsSub_copd[df_spiro_copd.idxcopd])
-	# εcopd
-
-# ╔═╡ ddf1313f-ecef-4970-9894-3ef2c832a33a
-df_spiro_copd
-
-# ╔═╡ ea420bf4-8e1b-4633-8ac3-75fd7f73ef91
-findall(qvalues .<= 0.05)
-
-# ╔═╡ 38f8472e-5930-4ea8-ae28-73781055c08b
-histogram(pvalues)
-
-# ╔═╡ 29e5234b-0459-4531-9c5b-eff5a7eb8a67
-histogram(qvalues)
-
-# ╔═╡ 60ef862a-f67a-4ea4-ae6d-74a5d2acfe93
-begin 
-	# est = xcopd
-	# lo = (xcopd.-εcopd)
-	# up = (xcopd.+εcopd)
-
-	# # se = (up .− lo)./(2*1.96)
-	# # SEdiff_sb  = εcopd./1.96
-	# tstats = avgcoef_sb./SEdiff_sb 
-	# pvalues = ccdf.(TDist(length(tstats)-1), abs.(tstats)).*2
-end
-
-# ╔═╡ 37c86980-6241-4121-ba87-6a3d8dc5a1ca
-
-# df_avg_sub_critical.CI
-pvalues_2 = 
-	ccdf.(TDist(length(tstats)-1),
-	abs.(tstats)).*2
-
-
-# ╔═╡ 5d92b5bd-fc46-49d1-b1fc-c13c00433265
-? Tdist
 
 # ╔═╡ df1598ed-d2bc-44eb-8c66-fbc57b262d41
 if @isdefined(TstatZsb)
@@ -1345,6 +1320,7 @@ begin
 			title = "COPDGene", 
 			titlefontsize = mytitlefontsize,
 			right_margin = -5mm,
+			xlim = (-.3,.35) ,
 			# size=(800,700), 
 			)
 		
@@ -1357,10 +1333,11 @@ begin
 			title = "SPIROMICS",
 			titlefontsize = mytitlefontsize,
 			left_margin = -5mm,
+			xlim = (-.3,.35) ,
 			# size=(800,700), 
 			)
 
-		plot(pmdl_copd, pmdl_spiro, layout = @layout [a b])
+		plot(pmdl_copd, pmdl_spiro, fontfamily = myfont,  layout = @layout [a b])
 
 		savefig(string(
 			"../images/copd_mlmCI_",
@@ -1369,7 +1346,7 @@ begin
 			"modules",
 			".svg")
 		)
-		plot(pmdl_copd, pmdl_spiro, layout = @layout [a b])
+		plot(pmdl_copd, pmdl_spiro, fontfamily = myfont, layout = @layout [a b])
 
 
 
@@ -1416,7 +1393,7 @@ begin
 		title = "Average", 
 		titlefontsize = mytitlefontsize,
 		xlim = (-.3,.35) ,
-		size = (500, 600),	
+		# size = (500, 600),	
 	)
 
 	p2_mdl = confidenceplot(
@@ -1433,10 +1410,10 @@ begin
 		title = "Difference", 
 		titlefontsize = mytitlefontsize,
 		xlim = (-.3,.35) ,
-		size = (500, 600),	
+		# size = (500, 600),	
 	)
 	
-	plot(p1_mdl, p2_mdl, layout = @layout [a b])
+	plot(p1_mdl, p2_mdl, fontfamily = myfont, layout = @layout [a b])
 	savefig(string(
 			"../images/copd_mlmCI_",
 			replace(xCovarFig_sb, " "=> "_", ":"=> "_"),
@@ -1444,14 +1421,26 @@ begin
 			"modules",
 			".svg")
 		)
-	plot(p1_mdl, p2_mdl, layout = @layout [a b])
+	plot(p1_mdl, p2_mdl, fontfamily = myfont, layout = @layout [a b])
 	
 end
 
 # ╔═╡ afad2cfb-d394-43fb-b434-f4de6bd4dff6
-begin
-# plot(pmdl_copd, pmdl_spiro, p1_mdl, p2_mdl, layout = @layout [a b;c d], size = ())
-end
+# begin
+
+# 	pp = plot(
+# 		pmdl_copd, pmdl_spiro,
+# 		p1_mdl, p2_mdl,
+# 		fontfamily = myfont,
+# 		layout = @layout [e f;g h]
+# 	)
+# 	plot(pp, size = (700, 800))
+# 	savefig(string(
+# 			"../images/",
+# 			"copd_mlmCI_full_Sex__Female_avg_diff_modules_2.svg")
+# 		)
+# 	plot(pp, size = (700, 800))
+# end
 
 # ╔═╡ f1c0cd37-362b-4fe6-b8e3-37ba3886ce2d
 # let 
@@ -3526,36 +3515,24 @@ version = "1.4.1+1"
 # ╟─a0b8461a-493f-4ee2-921b-7cc3c3b30ce4
 # ╟─b9a70c70-a560-419a-b86b-df252df9ef85
 # ╟─a321e2ce-0307-4baa-9d9e-821236a84f36
-# ╠═923b38bb-9f09-4591-a229-6552fd756307
-# ╠═660f3468-00ba-4938-83a6-9bdbb20d4795
+# ╟─923b38bb-9f09-4591-a229-6552fd756307
+# ╟─660f3468-00ba-4938-83a6-9bdbb20d4795
+# ╟─bfbf7c4f-5aa5-4ea3-9c43-695dde42e716
 # ╟─d427bc34-94a4-48bb-b880-d604a67a8d4a
 # ╟─0f942bb6-ea42-4988-93f4-6afa3874f91a
 # ╟─202b9efe-a41a-4ade-929f-c719a4a17abd
-# ╠═7d3574f1-a6ff-4629-8fe0-b40ba4de22a8
+# ╟─7d3574f1-a6ff-4629-8fe0-b40ba4de22a8
+# ╠═73c3d5c3-ed48-4dc8-a9fa-f8458d851fb4
 # ╟─e09bd194-ccb2-4448-8e05-1816dc261e31
 # ╟─f91ab58d-0808-4558-824d-6f348316c1b4
-# ╠═e76052ae-be3b-4459-be18-6c4ecc903093
-# ╠═7d6c2a28-4f85-4939-a7c7-f5aeab385d7e
-# ╠═0c94e2c0-3e65-47a5-9093-822ba610e9f2
+# ╟─e76052ae-be3b-4459-be18-6c4ecc903093
+# ╟─7d6c2a28-4f85-4939-a7c7-f5aeab385d7e
+# ╟─0c94e2c0-3e65-47a5-9093-822ba610e9f2
 # ╟─a65d4195-8580-4a6e-985d-1afa0d407f78
-# ╠═c8f666d6-953c-4d53-99aa-6ec72fd82669
+# ╟─c8f666d6-953c-4d53-99aa-6ec72fd82669
 # ╠═1ee7e175-1b6d-4f08-8ec7-945394e36311
-# ╠═2facc8b7-0300-4b31-bb51-e9c4ee2b7fd6
-# ╠═c610e158-1028-47e7-877f-7a6f7e863cb3
-# ╠═4cc3ecef-a047-4362-af4b-1e7e78564823
-# ╠═4b0bebfc-3162-427f-8430-f86eaeaa0b3c
-# ╠═d8885ae3-162d-49ea-b3f5-1030d76f73a0
+# ╠═5879e93d-380b-4de7-b6d1-1cc31d0c1f6c
 # ╠═b9bc72e7-e539-4715-9c75-bcd9ada7182b
-# ╠═6b89cc56-234f-4246-a200-fed293c7fffc
-# ╠═97af3d9f-1ed3-4bed-a46e-1682429c6355
-# ╠═da2a35a9-1dbd-4bd5-acbc-23f51ddc250e
-# ╠═ddf1313f-ecef-4970-9894-3ef2c832a33a
-# ╠═ea420bf4-8e1b-4633-8ac3-75fd7f73ef91
-# ╠═38f8472e-5930-4ea8-ae28-73781055c08b
-# ╠═29e5234b-0459-4531-9c5b-eff5a7eb8a67
-# ╠═60ef862a-f67a-4ea4-ae6d-74a5d2acfe93
-# ╠═37c86980-6241-4121-ba87-6a3d8dc5a1ca
-# ╠═5d92b5bd-fc46-49d1-b1fc-c13c00433265
 # ╟─df1598ed-d2bc-44eb-8c66-fbc57b262d41
 # ╟─d161fce0-14dd-44db-ba83-a6f58f4d9bdf
 # ╟─c090c950-08cf-4b3f-a06d-e96f51b1b52c
@@ -3564,7 +3541,7 @@ version = "1.4.1+1"
 # ╟─f572cc42-e003-40a2-be0b-11b52a6cc946
 # ╟─77171c73-5281-4c72-92cd-459faedece45
 # ╟─287da42a-4294-4942-8f33-7b478cddfbfd
-# ╠═44a53807-3ff5-423b-9745-18be61fc2af3
+# ╟─44a53807-3ff5-423b-9745-18be61fc2af3
 # ╟─afad2cfb-d394-43fb-b434-f4de6bd4dff6
 # ╟─f1c0cd37-362b-4fe6-b8e3-37ba3886ce2d
 # ╟─884e5cdd-cc55-45d6-be04-6ab1671ceaf6
