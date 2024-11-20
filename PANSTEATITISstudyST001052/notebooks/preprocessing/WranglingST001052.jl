@@ -7,17 +7,15 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.4
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: Julia 1.8.5
+#     display_name: Julia 1.11.1
 #     language: julia
-#     name: julia-1.8
+#     name: julia-1.11
 # ---
 
-# + [markdown] tags=[]
 # # Wrangling PANSTEATITIS study ST001052
 # ---
-# -
 
 # This notebook carries out the wrangling process for the [LIVER study ST001052 lipidomics data](https://www.metabolomicsworkbench.org/data/DRCCMetadata.php?Mode=Study&StudyID=ST001052&StudyType=MS&ResultType=1) [1].
 
@@ -40,26 +38,20 @@ using MetabolomicsWorkbenchAPI
 
 # ## Ext. Functions
 
-# + tags=[]
 include(joinpath(@__DIR__,"..","..","src","wrangling_utils.jl" ));
 include(joinpath(@__DIR__,"..","..","src","demog.jl" ));
-# -
 
 # ## Load data ST001052
 
 ST  = "ST001052";
 
-# + [markdown] tags=[]
 # ## Extract clinical covariates
-# -
 
 # Use the Julia's API to get the samples data from the [metabolomics workbench](https://www.metabolomicsworkbench.org/data/DRCCMetadata.php?Mode=Study&StudyID=ST001052).
 
-# + tags=[]
 # get clinical covariates
 dfIndividuals =  fetch_samples(ST);
 print_df_size(dfIndividuals)
-# -
 
 # List of the covariate names: 
 
@@ -232,11 +224,9 @@ select!(dfRef, [:Metabolite, :MetaboliteID]);
 
 # To get the classifciation information, we use the package `MetabolomicsWorkbenchAPI.jl`.
 
-# + tags=[]
 dfClassification = fetch_properties(dfRef.Metabolite);
 # insertcols!(dfClassification, 1, :metabolite_name => dfRef.metabolite_name);
 first(dfClassification, 3)
-# -
 
 idxmissing = findall(ismissing.(dfClassification.main_class))
 dfRef.Metabolite[idxmissing]
@@ -266,7 +256,6 @@ function standardizename(df::DataFrame, colname::String, matchstring)
     return df
 end
 
-# + tags=[]
 newcolname = ["Oxidized", "OH", "O", "O₂", "O₃", "O₄", "Plasmanyl", "Plasmalogen",
               "O₂", "O₃", "Plasmanyl", "Plasmalogen", "CHO", "Ke", "O" ] 
 rmvstring = ["Ox", "(OH)", "+O", "(OO)", "(OOO)", "(OOOO)", "O-", "P-",
@@ -275,9 +264,7 @@ for i in 1:length(newcolname)
     dfRef = standardizename(dfRef, newcolname[i], rmvstring[i]);
 end    
 
-# + tags=[]
 dfRef
-# -
 
 dfClassification = fetch_properties(dfRef.StandardizedName);
 insertcols!(dfClassification, 1, :Metabolite => dfRef.Metabolite);
@@ -293,9 +280,7 @@ dfRef = leftjoin(dfRef, dfClassification, on = :Metabolite); size(dfRef)
 # filter
 deleteat!(dfRef, idxmissing[[2,3]]);
 
-# + [markdown] tags=[]
 # ### Use GOSLIN
-# -
 
 R"""
 suppressMessages(library('rgoslin'))
@@ -337,9 +322,7 @@ end
 
 names(dfRef)
 
-# + [markdown] tags=[]
 # #### Save metabolites reference dataset:
-# -
 
 fileMetaboRef = joinpath(@__DIR__,"..","..","data","processed","refMeta.csv");
 dfRef |> CSV.write(fileMetaboRef);
@@ -366,9 +349,7 @@ end
 
 # ## Extract Metabolites dataset 
 
-# + tags=[]
 dfMetabo = fetch_data(ST);
-# -
 
 # rename sample ID with suffix
 vHeader = names(dfMetabo);
@@ -387,15 +368,12 @@ select!(dfMetaboAll, Not([:Metabolite]));
 select!(dfMetaboAll, vcat([:MetaboliteID], Symbol.(dfIndividuals.SampleID)));
 size(dfMetaboAll)
 
-# + [markdown] tags=[]
 # #### Save metabolites levels dataset:
-# -
 
 fileMetabo = joinpath(@__DIR__,"..","..","data","processed","Metabo.csv");
 dfMetaboAll = permutedims(dfMetaboAll, 1, :SampleID);
 dfMetaboAll |> CSV.write(fileMetabo);
 
-# + [markdown] tags=[]
 # ## References
 #
 # [1] Koelmel, J. P., Ulmer, C. Z., Fogelson, S., Jones, C. M., Botha, H., Bangma, J. T., Guillette, T. C., Luus-Powell, W. J., Sara, J. R., Smit, W. J., Albert, K., Miller, H. A., Guillette, M. P., Olsen, B. C., Cochran, J. A., Garrett, T. J., Yost, R. A., & Bowden, J. A. (2019). Lipidomics for wildlife disease etiology and biomarker discovery: a case study of pansteatitis outbreak in South Africa. Metabolomics : Official journal of the Metabolomic Society, 15(3), 38. https://doi.org/10.1007/s11306-019-1490-9    
@@ -409,5 +387,4 @@ dfMetaboAll |> CSV.write(fileMetabo);
 # [5] Koelmel, J. P., Jones, C. M., Ulmer, C. Z., Garrett, T. J., Yost, R. A., Schock, T. B., & Bowden, J. A. (2018). Examining heat treatment for stabilization of the lipidome. Bioanalysis, 10(5), 291–305. https://doi.org/10.4155/bio-2017-0209    
 #
 #
-# -
 
