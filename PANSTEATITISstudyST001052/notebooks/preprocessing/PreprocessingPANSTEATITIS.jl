@@ -16,7 +16,7 @@
 # # Preprocessing Step
 # ---
 
-# This notebook carrieds out the preprocessing steps for the metabolomics data:    
+# This notebook carried out the preprocessing steps for the metabolomics data:    
 # - Imputation
 # - Normalization
 # - Log2 Transformation
