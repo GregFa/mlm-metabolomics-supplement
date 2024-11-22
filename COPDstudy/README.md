@@ -10,8 +10,7 @@ This repository contains code and notebooks for metabolomics analysis of the COP
 - [Usage](#usage)
 - [Data](#data)
 - [Results](#results)
-- [Contributing](#contributing)
-- [License](#license)
+- [Dependencies](#dependencies)
 
 ## Introduction
 
