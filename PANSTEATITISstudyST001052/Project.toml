@@ -1,0 +1,9 @@
+[deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+FreqTables = "da1fdf0e-e0ff-5433-a45f-9bb5ff651cb1"
+MetabolomicsWorkbenchAPI = "19b29032-9db8-4baa-af7b-2b362e62b3d7"
+Missings = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
+RCall = "6f49c342-dc21-5d91-9882-a32aef131414"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
