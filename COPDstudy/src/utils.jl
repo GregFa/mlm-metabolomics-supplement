@@ -52,10 +52,8 @@ end
 Returns q-values from the p-values.
 
 """
-function pval2qval(vPvalues::AbstractVector)
-
-    vPvals = copy(vPvalues)
-    
+function pval2qval(vPvals::AbstractVector)
+        
     # Step 1: Estimate proportion of truly null hypothesis
     n = length(vPvals)
     Π₀ = estimate(vPvals, StoreyBootstrap())
@@ -76,9 +74,7 @@ function pval2qval(vPvalues::AbstractVector)
 end
 
 
-function pval2qval2(vPvalues::AbstractVector)
-
-    vPvals = copy(vPvalues)
+function pval2qval2(vPvals::AbstractVector)
     
     # Step 1: Estimate proportion of truly null hypothesis
     n = length(vPvals)
@@ -92,9 +88,7 @@ end
 
 
 
-function pval2qval(mPvalues::AbstractMatrix)
-    
-    mPvals = copy(mPvalues)
+function pval2qval(mPvals::AbstractMatrix)
     
     mPvals = permutedims(mPvals)
     

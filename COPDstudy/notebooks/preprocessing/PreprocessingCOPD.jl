@@ -6,11 +6,11 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: Julia 1.8.2
+#     display_name: Julia 1.11.1
 #     language: julia
-#     name: julia-1.8
+#     name: julia-1.11
 # ---
 
 # # Preprocessing Step
@@ -73,9 +73,7 @@ println("The positive late metabolite dataset contains $(size(dfPosLateMetabo, 1
 
 # The dataframe `dfPolarMetabo` contains Integer type instead of Float type, which produces an error during the imputation. We need to convert the values to Integer type.
 
-# + tags=[]
 typeof(dfPolarMetabo[:, 2])
-# -
 
 dfPolarMetabo[!,2:end] .= convert.(Union{Missing, Float64}, dfPolarMetabo[:, 2:end]);
 typeof(dfPolarMetabo[:, 2])

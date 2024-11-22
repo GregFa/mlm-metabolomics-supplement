@@ -7,11 +7,11 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: Julia 1.8.2
+#     display_name: Julia 1.10.5
 #     language: julia
-#     name: julia-1.8
+#     name: julia-1.10
 # ---
 
 # # Wrangling COPDGene
@@ -50,7 +50,6 @@ first(dfIndividuals, 3)
 
 # #### Metabolites References
 
-# + tags=[]
 # Reference metabolomics
 fileRefMetabo = realpath(joinpath(@__DIR__,"..","..","data","raw","COPDGene",
                                   "COPDGene_2018_Metabolon_metabolite_metadata.txt"))
@@ -60,7 +59,6 @@ fileRefMetabo = realpath(joinpath(@__DIR__,"..","..","data","raw","COPDGene",
 dfRefMetabo = CSV.read(fileRefMetabo, DataFrame;  delim = '	');
 rm(fileRefMetabo);
 names(dfRefMetabo)
-# -
 
 # Notes: we added `MetaID` variable name.  
 
@@ -102,9 +100,7 @@ first(dfPosLateMetabo, 3)
 
 # ## ST001443: COPDGene exploration
 
-# + [markdown] tags=[]
 # ### Individuals
-# -
 
 println("The participants dataset contains $(size(dfIndividuals, 1)) individuals and $(size(dfIndividuals, 2)) covariates.")
 
@@ -222,9 +218,7 @@ first(dfIndividuals)
 fileIndividuals = joinpath(@__DIR__,"..","..","data","processed","COPDGene","COPDGene_ClinicalCovariates.csv");
 dfIndividuals |> CSV.write(fileIndividuals);
 
-# + [markdown] tags=[]
 # ### Metabolomics References
-# -
 
 # #### Create dataframe whith pathways
 
@@ -305,27 +299,21 @@ dfRefMetabo[idxCotinine, :]
 
 freqtable(dfRefMetabo.SuperPathway)
 
-# + tags=[]
 idxLipid = findall(dfRefMetabo.SuperPathway .== "Lipid")
 freqtable(dfRefMetabo[idxLipid, :SubPathway]); #  |> show;
-# -
 
 # #### Save processed individuals dataset:
 
 fileRef = joinpath(@__DIR__,"..","..","data","processed","COPDGene","refMeta.csv");
 dfRefMetabo |> CSV.write(fileRef);
 
-# + [markdown] tags=[]
 # ### Negative
-# -
 
 # Filter `dfNegMetabo` sample according to the individuals dataframe `dfIndividuals`:
 
 # #### Keep complete cases
 
-# + tags=[]
 dfNegMetabo = keepComplete(dfNegMetabo, dfIndividuals, dfRefMetabo; sampleCol=  :SampleID);
-# -
 
 # #### Save filtered sample negative metabolites levels dataset:
 
@@ -334,17 +322,13 @@ dfNegMetabo |> CSV.write(fileNeg);
 
 println("The negative metabolite dataset contains $(size(dfNegMetabo, 2)-1) samples and $(size(dfNegMetabo, 1)) metabolites.")
 
-# + [markdown] tags=[]
 # ### Polar
-# -
 
 # Filter `dfPolarMetabo` sample according to the individuals dataframe `dfIndividuals`:
 
 # #### Keep complete cases
 
-# + tags=[]
 dfPolarMetabo = keepComplete(dfPolarMetabo, dfIndividuals, dfRefMetabo; sampleCol=  :SampleID);
-# -
 
 # #### Save filtered sample polar metabolites levels dataset:
 
@@ -359,9 +343,7 @@ dfRefMetabo.Biochemical[idxPol];
 
 # Polar dataset contains negative polar metabolites.
 
-# + [markdown] tags=[]
 # ### Positive Early
-# -
 
 # Filter `dfPosEarlyMetabo` sample according to the individuals dataframe `dfIndividuals`:
 #
@@ -369,9 +351,7 @@ dfRefMetabo.Biochemical[idxPol];
 
 # #### Keep complete cases
 
-# + tags=[]
 dfPosEarlyMetabo = keepComplete(dfPosEarlyMetabo, dfIndividuals, dfRefMetabo; sampleCol=  :SampleID);
-# -
 
 # #### Save filtered sample positive early metabolites levels dataset:
 
@@ -380,9 +360,7 @@ dfPosEarlyMetabo |> CSV.write(filePosEarly);
 
 println("The positive early metabolite dataset contains $(size(dfPosEarlyMetabo, 2)-1) samples and $(size(dfPosEarlyMetabo, 1)) metabolites.")
 
-# + [markdown] tags=[]
 # ### Positive Late
-# -
 
 # Filter `dfPosLateMetabo` sample according to the individuals dataframe `dfIndividuals`:
 #
@@ -390,9 +368,7 @@ println("The positive early metabolite dataset contains $(size(dfPosEarlyMetabo,
 
 # #### Keep complete cases
 
-# + tags=[]
 dfPosLateMetabo = keepComplete(dfPosLateMetabo, dfIndividuals, dfRefMetabo; sampleCol=  :SampleID);
-# -
 
 # #### Save filtered sample positive late metabolites levels dataset:
 

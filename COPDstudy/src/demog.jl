@@ -58,6 +58,34 @@ function getDemographicTable(dfIndividuals::DataFrame)
 
     # Pivot table
     dfDem = permutedims(dfDem, 1, "Variable") 
-    
+
+	####################
+	# Compute P-values #
+	####################
+
+	pval = zeros(8) *1.0
+	# grp = groupby(dfAgren, :flc);
+	pval[2] = UnequalVarianceTTest(gdf[1].Age[:], gdf[2].Age[:]) |> x -> pvalue(x)
+	pval[3] = UnequalVarianceTTest(gdf[1].BMI[:], gdf[2].BMI[:]) |> x -> pvalue(x)
+	pval[4] = UnequalVarianceTTest(gdf[1].SmokingPackYears[:], gdf[2].SmokingPackYears[:]) |> x -> pvalue(x)
+	pval[5] = UnequalVarianceTTest(gdf[1].PercentEmphysema[:], gdf[2].PercentEmphysema[:]) |> x -> pvalue(x)
+	
+	pval[6] = freqtable(dfIndividuals, :NHW, :Sex) |> 
+		x -> ChisqTest(x) |>
+		x -> pvalue(x)
+	pval[7] = freqtable(dfIndividuals, :CurrentSmoker, :Sex) |> 
+		x -> ChisqTest(x) |>
+		x -> pvalue(x)
+	pval[8] = freqtable(dfIndividuals, :COPD, :Sex) |> 
+		x -> ChisqTest(x) |>
+		x -> pvalue(x)
+
+	pval = pval |>
+		x -> round.(x, digits = 9) |>
+		x -> string.(x)
+	pval[1] = " "
+
+	dfDem.Pvalue = pval;
+	
     return dfDem
 end

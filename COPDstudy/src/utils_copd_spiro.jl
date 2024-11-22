@@ -201,9 +201,9 @@ end
 
 
 """
-**getcoeffs_mlm** -*Function*.
+**getCoefs_copd_spiro** -*Function*.
 
-getcoeffs_mlm(Y, X, Z) => MLMCoeffs
+    getCoefs_copd_spiro(Y, X, Z) => MLMCoeffs
 
 Returns coefficients, confidence of interval, T-stats.
 
