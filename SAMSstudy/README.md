@@ -28,6 +28,8 @@ supplements on lipid profiles, especially triglycerides. This repository provide
   - **preprocessing/**
     - [PreprocessingLipo.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/preprocessing/PreprocessingLipo.ipynb): Notebook that carries out the data wrangling process for the lipidomics data.
     - [PreprocessingMeta.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/preprocessing/PreprocessingMeta.ipynb): Notebook that carries out the data wrangling process for the metabolomics data.
+  - **enrichement_analysis/**
+    - [EnrichmentAnalysis.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/enrichment_analysis/EnrichmentAnalysis.ipynb): Notebook that performs metabolomic analysis related to fish oil, including enrichment analysis using overrepresentation analysis (ORA), and generates visualizations.
     
 
 - **src/**: Source code containing functions for preprocessing and analysis.
