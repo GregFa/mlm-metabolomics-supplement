@@ -19,7 +19,7 @@ The goal of this project is to analyze metabolomics data from the COPDGene and S
 ## Project Structure
 
 - **interactive/**
-  - [pansteatitis_analysis.jl](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/PANSTEATITISstudyST001052/interactive/pansteatitis_analysis.jl): Interactive Pluto notebook to run the metabolomics analysis.
+  - [pansteatitis_analysis.jl](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/PANSTEATITISstudyST001052/interactive/pansteatitis_analysis.jl): Interactive Pluto notebook to run the metabolomics analysis.
 
 - **notebooks/**
   - **preprocessing/**

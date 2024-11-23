@@ -19,14 +19,14 @@ The goal of this project is to analyze metabolomics data from the COPDGene and S
 ## Project Structure
 
 - **interactive/**
-  - [copdgene_spiromics_analysis.jl](https://rawcdn.githack.com/GregFa/mlm-metabolomics-supplement/b25ea655379fcdb3bccc39568b1129ad6a5eaa29/COPDstudy/interactive/copdgene_spiromics_analysis.html): Interactive Pluto notebook to run the metabolomics analysis.
+  - [copdgene_spiromics_analysis.jl](https://rawcdn.githack.com/senresearch/mlm-metabolomics-supplement/b25ea655379fcdb3bccc39568b1129ad6a5eaa29/COPDstudy/interactive/copdgene_spiromics_analysis.html): Interactive Pluto notebook to run the metabolomics analysis.
 
 - **notebooks/**
   - **preprocessing/**
-    - [WranglingCOPDGene.ipynb](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/WranglingCOPDGene.ipynb): Notebook that carries out the data wrangling process for the COPDGene metabolomics data.
-    - [WranglingSPIROMICS.ipynb](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/WranglingSPIROMICS.ipynb): Notebook that carries out the data wrangling process for the SPIROMICS metabolomics data.
-    - [PreprocessingCOPDGene.ipynb](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/PreprocessingCOPDGene.ipynb): Notebook that carries out the preprocessing steps for the COPDGene metabolomics data.
-    - [PreprocessingSPIROMICS.ipynb](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/PreprocessingSPIROMICS.ipynb): Notebook that carries out the preprocessing steps for the SPIROMICS metabolomics data.
+    - [WranglingCOPDGene.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/WranglingCOPDGene.ipynb): Notebook that carries out the data wrangling process for the COPDGene metabolomics data.
+    - [WranglingSPIROMICS.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/WranglingSPIROMICS.ipynb): Notebook that carries out the data wrangling process for the SPIROMICS metabolomics data.
+    - [PreprocessingCOPDGene.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/PreprocessingCOPDGene.ipynb): Notebook that carries out the preprocessing steps for the COPDGene metabolomics data.
+    - [PreprocessingSPIROMICS.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/PreprocessingSPIROMICS.ipynb): Notebook that carries out the preprocessing steps for the SPIROMICS metabolomics data.
 
 - **src/**: Source code containing functions for preprocessing and analysis.
 
@@ -66,12 +66,12 @@ Pkg.instantiate()
 1. **Place Raw Data**: Add your raw metabolomics data to the appropriate directory.
 
 2. **Run Wrangling Notebooks**:
-   - [`WranglingCOPDGene.ipynb`](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/WranglingCOPDGene.ipynb)
-   - [`WranglingSPIROMICS.ipynb`](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/WranglingSPIROMICS.ipynb)
+   - [`WranglingCOPDGene.ipynb`](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/WranglingCOPDGene.ipynb)
+   - [`WranglingSPIROMICS.ipynb`](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/WranglingSPIROMICS.ipynb)
 
 3. **Run Preprocessing Notebooks**:
-   - [`PreprocessingCOPDGene.ipynb`](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/PreprocessingCOPDGene.ipynb)
-   - [`PreprocessingSPIROMICS.ipynb`](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/PreprocessingSPIROMICS.ipynb)
+   - [`PreprocessingCOPDGene.ipynb`](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/PreprocessingCOPDGene.ipynb)
+   - [`PreprocessingSPIROMICS.ipynb`](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/COPDstudy/notebooks/preprocessing/PreprocessingSPIROMICS.ipynb)
 
 ### Metabolomics Analysis
 

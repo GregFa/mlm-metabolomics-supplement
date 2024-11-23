@@ -20,14 +20,14 @@ supplements on lipid profiles, especially triglycerides. This repository provide
 ## Project Structure
 
 - **interactive/**
-  - [sams_analysis.jl](https://rawcdn.githack.com/GregFa/mlm-metabolomics-supplement/ea303b23db6dee88ce9c4c4c70ba70ea287ceed5/SAMSstudy/interactive/sams_analysis.html): Interactive Pluto notebook to run the metabolomics analysis.
+  - [sams_analysis.jl](https://rawcdn.githack.com/senresearch/mlm-metabolomics-supplement/ea303b23db6dee88ce9c4c4c70ba70ea287ceed5/SAMSstudy/interactive/sams_analysis.html): Interactive Pluto notebook to run the metabolomics analysis.
 
 - **notebooks/**
   - **extract_annotations/**
-    - [BuildZdataset.ipynb](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/extract_annotations/BuildZdataset.ipynb): Notebook that carries out the extraction of the annotations of the matbolites.
+    - [BuildZdataset.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/extract_annotations/BuildZdataset.ipynb): Notebook that carries out the extraction of the annotations of the matbolites.
   - **preprocessing/**
-    - [PreprocessingLipo.ipynb](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/preprocessing/PreprocessingLipo.ipynb): Notebook that carries out the data wrangling process for the lipidomics data.
-    - [PreprocessingMeta.ipynb](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/preprocessing/PreprocessingMeta.ipynb): Notebook that carries out the data wrangling process for the metabolomics data.
+    - [PreprocessingLipo.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/preprocessing/PreprocessingLipo.ipynb): Notebook that carries out the data wrangling process for the lipidomics data.
+    - [PreprocessingMeta.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/preprocessing/PreprocessingMeta.ipynb): Notebook that carries out the data wrangling process for the metabolomics data.
     
 
 - **src/**: Source code containing functions for preprocessing and analysis.
@@ -68,11 +68,11 @@ Pkg.instantiate()
 1. **Place Raw Data**: Add your raw metabolomics data to the appropriate directory.
 
 2. **Run Wrangling Notebooks**:
-   - [BuildZdataset.ipynb](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/extract_annotations/BuildZdataset.ipynb)
+   - [BuildZdataset.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/extract_annotations/BuildZdataset.ipynb)
 
 3. **Run Preprocessing Notebooks**:
-   - [PreprocessingLipo.ipynb](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/preprocessing/PreprocessingLipo.ipynb)
-   - [PreprocessingMeta.ipynb](https://github.com/GregFa/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/preprocessing/PreprocessingMeta.ipynb)
+   - [PreprocessingLipo.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/preprocessing/PreprocessingLipo.ipynb)
+   - [PreprocessingMeta.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/SAMSstudy/notebooks/preprocessing/PreprocessingMeta.ipynb)
    
 ### Metabolomics Analysis
 
