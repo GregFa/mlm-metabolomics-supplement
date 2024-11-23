@@ -5,7 +5,7 @@ with datasets through the REST API of https://www.metabolomicsworkbench.org/.
 
 
 
-module PANSTEATITISstudyST001052
+module PANSTEATITISstudy
 
     using MatrixLM, MetabolomicsWorkbenchAPI, DataFrames
     using RecipesBase
