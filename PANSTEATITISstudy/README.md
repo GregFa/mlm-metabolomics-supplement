@@ -19,12 +19,12 @@ The goal of this project is to analyze metabolomics data from the COPDGene and S
 ## Project Structure
 
 - **interactive/**
-  - [pansteatitis_analysis.jl](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/PANSTEATITISstudyST001052/interactive/pansteatitis_analysis.jl): Interactive Pluto notebook to run the metabolomics analysis.
+  - [pansteatitis_analysis.jl](https://rawcdn.githack.com/senresearch/mlm-metabolomics-supplement/03e3138b0c01906f0e7586721fc847db53f5de44/PANSTEATITISstudy/interactive/pansteatitis_analysis.html): Interactive Pluto notebook to run the metabolomics analysis.
 
 - **notebooks/**
   - **preprocessing/**
-    - [WranglingST001502.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/PANSTEATITISstudyST001052/notebooks/preprocessing/WranglingST001052.ipynb): This notebook carries out the wrangling process for the LIVER study ST001052 lipidomics data.
-    - [PreprocessingPANSTEATITIS.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/PANSTEATITISstudyST001052/notebooks/preprocessing/PreprocessingPANSTEATITIS.ipynb): This notebook carried out the preprocessing steps for the metabolomics data.
+    - [WranglingST001502.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/PANSTEATITISstudy/notebooks/preprocessing/WranglingST001052.ipynb): This notebook carries out the wrangling process for the LIVER study ST001052 lipidomics data.
+    - [PreprocessingPANSTEATITIS.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/PANSTEATITISstudy/notebooks/preprocessing/PreprocessingPANSTEATITIS.ipynb): This notebook carried out the preprocessing steps for the metabolomics data.
 
 - **src/**: Source code containing functions for preprocessing and analysis.
 
@@ -46,7 +46,7 @@ Clone the repository:
 
 ```bash
 git clone https://github.com/senresearch/mlm-metabolomics-supplement.git
-cd mlm-metabolomics-supplement/PANSTEATITISstudyST001052
+cd mlm-metabolomics-supplement/PANSTEATITISstudy
 ```
 
 Install the required Julia packages for the Jupyter notebooks (*Note:Pluto notebooks environment is self-contained*):
@@ -64,10 +64,10 @@ Pkg.instantiate()
 1. **Place Raw Data**: Add your raw metabolomics data to the appropriate directory.
 
 2. **Run Wrangling Notebooks**:
-   - [WranglingST001502.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/PANSTEATITISstudyST001052/notebooks/preprocessing/WranglingST001052.ipynb): 
+   - [WranglingST001502.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/PANSTEATITISstudy/notebooks/preprocessing/WranglingST001052.ipynb): 
 
 3. **Run Preprocessing Notebooks**:
-   - [PreprocessingPANSTEATITIS.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/PANSTEATITISstudyST001052/notebooks/preprocessing/PreprocessingPANSTEATITIS.ipynb)
+   - [PreprocessingPANSTEATITIS.ipynb](https://github.com/senresearch/mlm-metabolomics-supplement/blob/main/PANSTEATITISstudy/notebooks/preprocessing/PreprocessingPANSTEATITIS.ipynb)
    
 
 ### Metabolomics Analysis

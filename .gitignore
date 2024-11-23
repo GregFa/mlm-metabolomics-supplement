@@ -31,11 +31,11 @@ COPDstudy/src/.ipynb_checkpoints/
 COPDstudy/images/*.svg
 
 
-PANSTEATITISstudyST001052/data/*
-PANSTEATITISstudyST001052/notebooks/preprocessing/.ipynb_checkpoints/
-PANSTEATITISstudyST001052/src/.ipynb_checkpoints/
-PANSTEATITISstudyST001052/images/*.svg
-PANSTEATITISstudyST001052/temp/
+PANSTEATITISstudy/data/*
+PANSTEATITISstudy/notebooks/preprocessing/.ipynb_checkpoints/
+PANSTEATITISstudy/src/.ipynb_checkpoints/
+PANSTEATITISstudy/images/*.svg
+PANSTEATITISstudy/temp/
 
 
 *.zip
