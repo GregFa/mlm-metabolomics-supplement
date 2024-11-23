@@ -8,9 +8,9 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: Julia 1.10.5
+#     display_name: Julia 1.11.1
 #     language: julia
-#     name: julia-1.10
+#     name: julia-1.11
 # ---
 
 # # Preprocessing Step

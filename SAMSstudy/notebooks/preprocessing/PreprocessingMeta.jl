@@ -6,11 +6,11 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.4
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: Julia 1.8.5
+#     display_name: Julia 1.11.1
 #     language: julia
-#     name: julia-1.8
+#     name: julia-1.11
 # ---
 
 # # Preprocessing Step
@@ -98,7 +98,6 @@ first(dfPosMeta)
 
 # Adjust for column name according to primary csv file.
 
-# + tags=[]
 # drop CLASS column 
 dfNegMetaKln = select(dfNegMetaKln, Not(:CLASS));
 rename!(dfNegMetaKln, :NAME=> :Sample);
@@ -106,7 +105,6 @@ rename!(dfNegMetaKln, :NAME=> :Sample);
 rename!(dfPosMetaKln, :CLASS=> :Batch);
 rename!(dfPosMetaKln, :NAME=> :Sample);
 dfPosMetaKln.Batch = dfNegMetaKln.Batch;
-# -
 
 dfNegMetaKln = addGroupCatMeta(dfNegMetaKln, false);
 dfPosMetaKln = addGroupCatMeta(dfPosMetaKln, false);
@@ -144,19 +142,15 @@ first(dfNegMeta)
 
 # Remove the columns: *Group, Batch and Column4*
 
-# + tags=[]
 select!(dfNegMeta, Not([:Group, :Batch, :Column4]));
 first(dfNegMeta)
-# -
 
 # Positive:
 
 first(dfPosMeta)
 
-# + tags=[]
 select!(dfPosMeta, Not([:Group, :Batch]));
 first(dfPosMeta)
-# -
 
 # ### Check that metabolites column names are similar
 
@@ -178,21 +172,16 @@ DataFrame(Meta = ["Neg", "Pos"],
 
 first(dfNegMetaKln)
 
-# + tags=[]
 select!(dfNegMetaKln, [:Sample, :Batch, :Group, :Statin, :FishOil]);
 select!(dfPosMetaKln, [:Sample, :Batch, :Group, :Statin, :FishOil]);
-# -
 
 # Left-join to the original values:
 
-# + tags=[]
 dfNegMeta = leftjoin(dfNegMetaKln, dfNegMeta, on= :Sample)
 first(dfNegMeta, 5)
 
-# + tags=[]
 dfPosMeta = leftjoin(dfPosMetaKln, dfPosMeta, on= :Sample);
 first(dfPosMeta,5)
-# -
 
 # ## Impute missing data  
 # ---
@@ -243,9 +232,7 @@ suppressMessages(library(tidyverse));
 
 dfNeg = catBGSF(dfNegMeta);
 
-# + tags=[]
 dfPos = catBGSF(dfPosMeta);
-# -
 
 @rput dfNeg;
 @rput dfPos;
@@ -319,11 +306,9 @@ plotattr("size")
 
 # ### Lipids most influenced by batches
 
-# + tags=[]
 # Get variance explained
 dfVarExplNeg = getVarExpl(Xneg, XbatchNeg, names(dfNeg)[6:end]);
 dfVarExplPos = getVarExpl(Xpos, XbatchPos, names(dfPos)[6:end]);
-# -
 
 first(dfVarExplNeg, 5)
 
@@ -360,7 +345,6 @@ size(dfNeg)
 
 # ## Correct batch effect with combat 
 
-# + tags=[]
 R"""
 suppressMessages(library(sva))
 fCombat <- function(myDf){
@@ -448,11 +432,9 @@ plot(pNeg, pPos, legend = :outertopright, title = ["Negative Lipids" "Positive L
 
 # ### Metabolites most influenced by batches after correction
 
-# + tags=[]
 # Get variance explained
 dfVarExplNeg = getVarExpl(Xneg, XbatchNeg, names(dfNeg)[6:end]);
 dfVarExplPos = getVarExpl(Xpos, XbatchPos, names(dfPos)[6:end]);
-# -
 
 first(dfVarExplNeg, 5)
 
@@ -476,11 +458,10 @@ ylabel!("Explained Variance")
 
 # + [markdown] kernel="SoS"
 # ## Save pretreatments
+# -
 
-# + tags=[]
 dfNegMeta[:, 6:end] = mLipidsBatchAdjNeg;
 dfPosMeta[:, 6:end] = mLipidsBatchAdjPos;
-# -
 
 println(string("Number of Missing for Neg: " , 
         length(findall(Matrix(dfNegMeta[:,6:end]) .=== missing))))
@@ -493,13 +474,11 @@ dfNegMeta |> CSV.write("../../data/data_processed/inl2b_NegMeta.csv")
 
 dfPosMeta |> CSV.write("../../data/data_processed/inl2b_PosMeta.csv")
 
-# + tags=[]
 dfNegMeta[80:100,:]
-# -
 
 first(dfPosMeta,3)
 
-# + tags=[]
+# +
 # Join negative and positive lipids data frames
 
 # Keep only "[ ]" and ID inside bracket:
