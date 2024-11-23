@@ -16,85 +16,210 @@ macro bind(def, element)
     #! format: on
 end
 
-# ╔═╡ 1fc288d0-e38d-11ed-1239-49fc6de01db3
-begin
-	using PlutoUI
-	PlutoUI.TableOfContents()
-end
-
-# ╔═╡ 4ffdd121-dceb-4e8a-8f84-f21aad3f84f2
+# ╔═╡ a18a4598-c89c-482e-bc27-c8e953e2e6d6
 begin
 	#############
 	# Libraries #
 	#############
-
+	using CSV, DataFrames, DataFramesMeta, Missings#, CategoricalArrays
+	using StatsBase, Statistics, MatrixLM
+	using Random, Distributions, StatsModels#, MultivariateStats
+	using LinearAlgebra, Latexify
+	using FreqTables, Plots, StatsPlots, PlutoUI, Images, FileIO
+	using Plots.PlotMeasures
 	
-	# using CSV, DataFrames, DataFramesMeta, Missings, CategoricalArrays
-	# using StatsBase, Statistics, MultivariateStats, MatrixLM
-	# using Random, Distributions, GLM, StatsModels
-	# using LinearAlgebra, PrettyTables, Latexify
+	# ######################
+	# # External functions #
+	# ######################
+	# include(joinpath(@__DIR__, "..","..","src","mLinearModel.jl" ));
+	# include(joinpath(@__DIR__,"..","..", "src","myPlots.jl" ));
+
+end;
+
+# ╔═╡ c4932bc0-e06d-4f00-a8c7-ab3d6cff8f6b
+begin
+	# #############
+	# # Libraries #
+	# #############
+	# using CSV, DataFrames, DataFramesMeta, Missings#, CategoricalArrays
+	# using StatsBase, Statistics, MatrixLM
+	# using Random, Distributions, StatsModels#, MultivariateStats
+	# using LinearAlgebra, Latexify
 	# using FreqTables, Plots, StatsPlots, PlutoUI, Images, FileIO
-	# using Plots.PlotMeasures, ColorSchemes, RecipesBase
-	# # using PlotlyBase
-	# using MetabolomicsWorkbenchAPI
-
-	using Plots, StatsPlots, Images
-	using Plots.PlotMeasures, ColorSchemes, RecipesBase
-	using CSV, DataFrames, DataFramesMeta, Missings, CategoricalArrays
-	using FreqTables
-	using StatsBase, Distributions, StatsModels, LinearAlgebra
-	using PrettyTables, Latexify
-	using MatrixLM, MetabolomicsWorkbenchAPI
-
-
+	# using Plots.PlotMeasures
+	
 	######################
 	# External functions #
 	######################
-	include(joinpath(@__DIR__, "..","src","wrangling_utils.jl" ));
-	include(joinpath(@__DIR__, "..","src","utils.jl" ));
-	# include(joinpath(@__DIR__, "..","src","demog.jl" ));
-	include(joinpath(@__DIR__, "..","src","mLinearModel.jl" ));
-	include(joinpath(@__DIR__,"..", "src","recipe_plots.jl" ));
+	include(joinpath(@__DIR__, "..", "src","mLinearModel.jl" ));
+	include(joinpath(@__DIR__,"..", "src","myPlots.jl" ));
 
-	#######################
-	# Plotting Attributes #
-	#######################
-	myfont = "Helvetica"
-	mytitlefontsize = 12
-
-	# ID of the study
-	df_study_info = fetch_study_info("ST001052");
 end;
 
-# ╔═╡ dd113c37-a08b-4c31-b5bc-7a38d2efdcbe
-md"""
-# PANSTEATITIS Analysis Using Matrix Linear Models  
----
-**Gregory Farage, Chenhao Zhao, Saunak Sen**    
+# ╔═╡ fdf4dcef-08ba-4be7-9201-0bb834ce127f
+PlutoUI.TableOfContents()
 
-	gfarage@uthsc.edu / sen@uthsc.edu
+# ╔═╡ ac2597c9-e7d7-4c0d-8bcd-1b4f6e597f48
+md"""
+# Lipidomics Analysis Using Matrix Linear Models  
+### Gregory Farage, Śaunak Sen *et al.*
+    gfarage@uthsc.edu / sen@uthsc.edu
     Division of Biostatistics
     Department of Preventive Medicine
     University of Tennessee Health Science Center
     Memphis, TN
-	
-	chenhao.zhao.gr@dartmouth.edu
-	Graduate Program in Quantitative Biomedical Sciences
-	Geisel School of Medicine
-	Dartmouth College
-	Hanover, NH
-    
 """
 
-# ╔═╡ e8e4eb9d-12b7-486d-9b40-7174aba0b072
+# ╔═╡ 69d6fae1-7184-4d97-b74a-b9e5f3ea172a
 md"""
 ## Background
-$(df_study_info.STUDY_SUMMARY[1])
-(Koemel, 2018; Koemel *et al.*, 2019)
+
+For decades, statins have been effective and widely popular cholesterol-lowering agents with substantial benefits for preventing and treating cardiovascular disease.
+However, some patients can not tolerate statins. Statin intolerance is usually associated with muscle pain as side effects, also known as statin-associated muscle symptoms (SAMS). 
+
+**SAMS are particularly difficult to treat:**
+* no validated biomarkers or tests to confirm patient self-reports of SAMS
+* some self-reported patients have non-specific muscle pain not attributable to statin therapy
+"""
+
+# ╔═╡ 5a56e0b8-697f-4413-857a-7f3f6aeae649
+md"""
 ## Project Summary
 
-This project seeks to investigate the association between metabolite characteristics (e.g., pathways) and patient characteristics such as sex or age by using Matrix Linear Models.
+This project seeks to identify biomarkers and pathway's related to susceptibility to SAMS based on metabolomic and lipidomic studies.   
 
+**Comparisons of metabolomic/lipidomic profiling are made for:**
+* CS-baseline group vs CS group (paired samples)
+* CN group vs CS group (unpaired samples)
+
+**Group’s acronym definition:**
+* CS-baseline group: Patients with documented SAMS off statin    
+
+* CS group: Patients with documented SAMS following rechallenge with statin (Rechallenge) for up to 4 weeks or until symptomatic.     
+       
+* CN group: Controls patients who have no history of SAMS and who are currently treated with statin.
+"""
+
+# ╔═╡ f1225001-2767-4f06-9a8b-5143d78fddc1
+md"""
+## Data set glimpse
+"""
+
+# ╔═╡ 4d0a36eb-546a-4779-8b54-92d64f377e2a
+md"
+Select if the analysis includes all individuals or only those who do not take fish oil:
+$(@bind slctFishOil Select([\"true\"=>\"All individuals\", \"false\"=>\"Only individuals without Fish Oil\"]))
+"
+
+# ╔═╡ db113b22-a4d7-486b-a900-b72ba24a5219
+begin 
+	#############
+	# Load data #
+	#############
+	
+	# Load look up table for lipids
+	LipidsXref = 		realpath((@__DIR__)*"/../data/data_processed/inl2b_Lipids_Xref.csv")
+	dfLipidsXref = DataFrame(CSV.File(LipidsXref));
+
+	# Load data set
+	fileLipids = realpath((@__DIR__)*"/../data/data_processed/inl2b_Lipids.csv")
+	dfLipids = DataFrame(CSV.File(fileLipids));
+
+	################
+	# Filter cases #
+	################
+	# true => unpaired
+	# false => paired (rechallenge)
+	isunpairFlag = true;
+	df = getCases(dfLipids, isunpaired = isunpairFlag);
+	
+	# Check to filter none fish oil users 
+	hasFishOil = eval(Meta.parse(slctFishOil));
+	
+	if !hasFishOil
+		# Get only individuals with no fish oil
+		filter!(row-> row.FishOil == "no" ,df);
+	end
+	
+	
+	# standardize lipids mass-to-charge ratio
+	funStandardize!(df, isunpaired = isunpairFlag);
+end;
+
+# ╔═╡ 96557436-1905-41c1-908a-83bf2496471a
+df[1:7, 1:8]
+
+# ╔═╡ 3768c5bf-7938-4022-a89e-c2a596b2bec6
+md"
+## Individual characteristics
+
+Two-way contingency table considering `Group` and `FishOil` variables: 
+"
+
+# ╔═╡ 457037bb-c9a4-4e1f-9f9c-d77c4617e5bb
+begin 
+	fullTable = freqtable(dfLipids[:, [:FishOil, :Group]], :FishOil, :Group)
+	matFullfreq = collect(fullTable[:,:]);
+	matFullfreq = vcat(matFullfreq, sum(matFullfreq, dims= 1))
+	matFullfreq = hcat(matFullfreq, sum(matFullfreq, dims= 2))
+	dfFreqFull = DataFrame(matFullfreq, :auto)
+	rename!(dfFreqFull, Symbol.(vcat(names(fullTable,2), "Total")))
+	insertcols!(dfFreqFull, 1, :_ => vcat("Fish Oil: ".*(names(fullTable,1)), Symbol("Total")))
+end
+
+# ╔═╡ a09a88c7-b9ba-4ba4-9fdb-d83b9f93a059
+md"
+## Lipid characteristics
+
+Each lipid ID corresponds to the nomenclature of a molecule that has been profiled in our lipidomic: 
+"
+
+# ╔═╡ 2ff05254-37a9-4bd2-b384-766b0dd364d5
+dfLipidsXref[sample(1:size(dfLipidsXref)[1],7, replace=false, ordered=true), :]
+
+# ╔═╡ 5499d79a-9adb-4c12-a789-d8497d3c128d
+md"
+Frequency table of the present lipids main class according to the Grammar of Succinct Lipid Nomenclature (Goslin): 
+"
+
+# ╔═╡ 4c385d0d-9bd1-4ccd-93af-adc8187e0a4a
+begin 
+	########################
+	# Load Z raw all valid #
+	########################
+	
+	# Get Zmat 
+	dfZrawAll =  DataFrame(CSV.File("../data/data_processed/ZmatRawAll.csv"))
+	
+	classLipids = freqtable(dfZrawAll.Class)
+	DataFrame(Class = names(classLipids, 1), Count = collect(classLipids[:]))
+	
+end
+
+# ╔═╡ 8c5f5b68-630a-49eb-9ce1-55856c613b83
+md"
+Since triglycerides (TG) are one of the important constituents of the lipid fraction of the human body, and represent the main lipid component of our dietary fat and fat depots, we are interested to study variation in triglyceride composition.
+"
+
+# ╔═╡ 13d9aaab-cbb7-460d-9d92-04b98efdd4cd
+md"""
+## Using matrix linear models to study variation in triglyceride composition
+
+Matrix linear models provide a framework for studying associations in high-throughput data using bilinear models.
+
+$$Y= X B Z^\prime + E,$$
+
+where
+- ``Y`` is the outcome data matrix (trigliceride levels)
+- ``X`` is a design matrix constructed from individual covariates (phenotype status, whether they were taking fish oil)
+- ``Z`` is a design matrix constructed from outcome covariates (information about the triglicerides)
+- ``E`` is random error assumed to have mean zero, independent across individuals, but possibly correlated across outcomes
+
+$$V(vec(E)) = \Sigma \otimes I.$$
+"""
+
+# ╔═╡ 06181b9e-496e-4b76-b2c2-980e62f5e2cd
+md"""
 ## Methods
  $(load("../images/matrixlinearmodel.png"))    
      
@@ -110,1252 +235,764 @@ where
 
 $$V(vec(E)) = \Sigma \otimes I.$$
 
+The model can also be viewed as a bilinear model of $y$ in terms of the $x$ and $z$ covariates:
+
+$$y_{ij} = \sum_{i{=}1}^n \sum_{j{=}1}^m b_{kl} x_{ik} z_{jl} + e_{ij}.$$
+
+The regression coefficients ($b$'s) can be interpreted as interactions between the corresponding $x$ and $z$ covariates.
 """
 
-# ╔═╡ da4d2151-6cae-41fc-8966-de03decaf5a8
+# ╔═╡ 66192588-7730-4505-ac79-e7fc8ce3bc0d
 md"""
-## Data Analysis
+## Data analysis
 """
 
-# ╔═╡ 7c18f869-f0ce-44c6-99d3-c0ab2b801001
-md"""
->This data is available at the NIH Common Fund's National Metabolomics Data Repository (NMDR) website, the Metabolomics Workbench, [https://www.metabolomicsworkbench.org](https://www.metabolomicsworkbench.org), where it has been assigned Project ID PR000705. The data can be accessed directly via it's Project DOI: [10.21228/M8JH5X](http://dx.doi.org/10.21228/M8JH5X) This work is supported by NIH grant, U2C- DK119886.
-"""
-
-# ╔═╡ bc027ee4-9912-480a-82ab-7b7f00d29403
-begin
-###############
-# Individuals #
-###############
-
-fileIndividuals = joinpath(@__DIR__,"..","data","processed",
-							"ST001052_ClinicalCovariates.csv");
-dfInd = CSV.read(fileIndividuals, DataFrame);
-# dfInd = select(dfInd, Not([:Fibrosis,:Ballooning]))
-# keep complete cases
-dfInd = dfInd[findall(completecases(dfInd)), :];
-
-# names of the categorical variables
-vIndivCatNames = ["Group", "Gender"]
-
-#########################
-# Metabolites responses #
-#########################
-
-# Get metabolite file
-fileMeta = joinpath(@__DIR__,"..","data","processed","nl2_Meta.csv");
-dfMet = CSV.read(fileMeta, DataFrame);
-	
-
-###########################
-# Metabolites annotations #
-###########################	
-
-# Get reference metabolite file
-fileRef = joinpath(@__DIR__,"..","data","processed","refMeta.csv");
-dfRef = CSV.read(fileRef, DataFrame);
-	
-# Sort according to metabolite_ID 
-sort!(dfRef, [:MetaboliteID]);
-	
-# Keep only references according to metabolites in the response dataframe
-# Get metabolite ID from the outcome dataframe
-dfMetID = DataFrame(MetaboliteID = names(dfMet)[2:end]);
-# Use the join function to filter the reference dataframe
-dfRef = rightjoin(dfRef,dfMetID, on = :MetaboliteID);
-
-# Group 
-dfRef.super_class = String.(replace(dfRef.super_class, missing=>"NA"))
-dfRef.sub_class = String.(replace(dfRef.sub_class, missing=>"NA"))
-dfRef.Class = String.(replace(dfRef.Class, missing=>"NA"))
-dfRef.main_class = String.(replace(dfRef.main_class, missing=>"NA"))	
-dfRef.sub_class = replace.(dfRef.sub_class, "O-PC"=>"PC",	"O-PS"=>"PS")
-	
-	
-###########################
-# Triglycerides responses #
-###########################
-	
-# select only triglyceride metabolites in dfRef
-dfRefTG = filter(row -> row.Class == "TG",dfRef)
-	
-# sort dfRefTG according to MetaboliteID 
-sort!(dfRefTG, [:MetaboliteID]);
-	
-# select only triglycerides metabolites in dfMet 
-dfMetTG = copy(dfMet[:, vcat([:SampleID], Symbol.(dfRefTG.MetaboliteID))])
-
-funStandardize!(dfMetTG, tocenter = true)
-	
-# get the outcome matrix 
-mYTG = Matrix(dfMetTG[:,2:end]);
-
-# get the number of columns in the outcome matrix
-mTG = size(mYTG, 2);
-
-
-# No need here to standardize since it is already done in preprocessing
-funStandardize!(dfMet, tocenter = true)
-
-# Order metabolite_ID columns
-dfMet = dfMet[!, vcat([:SampleID], Symbol.(sort(names(dfMet)[2:end])))]
-
-# get the outcome matrix 
-mY = Matrix(dfMet[:,2:end]);
-
-# get number of columns in the outcome matrix
-m = size(mY, 2);
-	
-
-end;
-
-# ╔═╡ a77a3328-9fb7-4bfb-b576-00fe281b826e
-md"""
-### Individual Characteristics
-"""
-
-# ╔═╡ 7292bdd6-1e43-464e-829a-013809f06f46
-md"""
-The clinical dataset contains *n*= $(size(dfInd, 1)) participants. The following table contains  the clinical data dictionary:
-"""
-
-# ╔═╡ af2399d5-6679-4529-a382-b3b0b9601882
-begin
-	fileClinicalDict = joinpath(@__DIR__,"..","data","processed", "ClinicalDataDictionary.csv");
-	dfClinicalDict = CSV.read(fileClinicalDict, DataFrame);
-	latexify(dfClinicalDict; env=:mdtable, latex=false)
-end
-
-# ╔═╡ d5276e0c-8b29-4efa-b1c6-d080658a7a3c
-md"""
-\* *Notes:*
-*Vet score, PCV color, and histological score determine if a tilapia is healthy or pansteatitis-affected.*     
-"""
-
-# ╔═╡ edc7f20a-5477-410b-b6d2-64795d0e29dd
-md"""
-The following table presents the demographics for the tilapias:
-"""
-
-# ╔═╡ 6d84ebd3-6949-42ff-9b06-f7fd4e7c8f0d
-begin 
-	fileDemog = joinpath(@__DIR__,"..","data","processed",
-							"demog.csv");
-	dfDemographic = CSV.read(fileDemog, DataFrame);
-	latexify(dfDemographic; env=:mdtable, latex=false)
-end
-
-# ╔═╡ 5ee27ca3-a0ee-42a5-a0f2-0eddee47f81a
-begin 
-	dfg = groupby(dfInd, :Status);
-	histogram(dfg[1].Age)
-	# histogram()
-end
-
-# ╔═╡ adb0c520-3229-48c5-ac4d-5fb2e0bf8093
-combine(dfg, :Age => mean, :Age => std)
-
-# ╔═╡ 473b48ae-b5c6-4de4-b776-6b664bf46082
-histogram(dfg[2].Age)
-
-# ╔═╡ d2053cf6-59a7-4ace-a1ff-838feca23056
-freqtable(dfInd.Histological_Score)
-
-# ╔═╡ ef386a1a-f755-49fa-80bb-27d5c338d2e3
-md"""
-### Metabolites Characteristics
-"""
-
-# ╔═╡ 1cc20658-6725-4a47-a0be-4e42ad2c80b9
-md"""
-#### Preprocessing
-We preprocessed the metabolomic datasets through the following steps: (1) imputation was not needed, (2) we performed a normalization based on the probabilistic quotient normalization (Dieterle *et al.*, 2006) method, (3) we applied a log2-transformation to make data more symmetric and homoscedastic.
-"""
-
-# ╔═╡ e41ff6d5-f332-4601-9092-7d182bcd76d2
-md"""
-#### Dataset Overview 
-The metabolomic dataset contains *m*=$(size(dfMet, 2)-1) metabolites. According to their attributes, each metabolite may belong to one of the $(length(unique(dfRef.super_class))-1) identified classes or to the untargeted class, named "NA". It is also possible to sub-classified them based on  $(length(unique(dfRef.sub_class))-1) sub-classes and one untargeted sub-class, tagged as "NA". The following table presents the $(length(unique(dfRef.main_class))) "super classes" and their ID tags: 
-"""
-
-# ╔═╡ 3316f2ff-1ca2-43c3-9c59-dc352b75f9a1
-begin 
-	# freq table
-	vFreq = freqtable(dfRef.super_class)
-	dfFreq = DataFrame(Class = names(vFreq)[1], Count = vFreq)
-	# join dataframes
-	dfFreq =leftjoin(rename(sort(unique(dfRef[:,[:super_class]])),
-					 [:super_class].=> [:Class]), dfFreq,
-					  on = :Class)
-	# display table
-	latexify(dfFreq; env=:mdtable, latex=false)
-end
-
-# ╔═╡ 60e617ba-4ed4-4353-9afe-61fa677319c0
-md"""
-The following table presents the $(length(unique(dfRef.sub_class))) sub-classes and their ID tags: 
-"""
-
-# ╔═╡ fc95c8db-3373-4665-afa5-e79c65c0d738
-begin 
-	# freq table
-	vFreq_sub = freqtable(dfRef.sub_class)
-	dfFreq_sub = DataFrame(SubClass = names(vFreq_sub)[1], Count = vFreq_sub)
-	# join dataframes
-	dfFreq_sub =leftjoin(rename(unique(dfRef[:,[:sub_class]]),
-					  		[:sub_class].=> [:SubClass]),
-					dfFreq_sub, on = :SubClass)
-
-	
-	fileSubClassDict = joinpath(@__DIR__,"..","data","processed", "SubClassDictionary.csv");
-	dfSubClassDict = CSV.read(fileSubClassDict, DataFrame);
-	dfFreq_sub = leftjoin(rename(dfSubClassDict, Dict(:Name => "Sub Class")),
-		 dfFreq_sub,
-		 on = :SubClass)
-	
-	dfFreq_sub = sort(dfFreq_sub, [:SubClass])
-	
-	dfFreq_sub = rename(dfFreq_sub, Dict(:SubClass => "ID"))
-	latexify(dfFreq_sub; env=:mdtable, latex=false)
-end
-
-# ╔═╡ 53fc9db0-28d3-4deb-96f0-91a8e1fe6dbc
-md"""
-## Modeling Decision
-
-$$Y= X B Z^\prime + E,$$
-"""
-
-# ╔═╡ 4d665b9d-a085-482f-b60f-670d3cc2d541
-md"""
-### X matrix
-"""
-
-# ╔═╡ 1cf4e218-e1e6-47ad-80a2-94fddedecb10
-@bind xCovariates MultiCheckBox(vcat(["Intercept"], names(dfInd)[2:end]),
-						default = ["Intercept", "Age", "Weight", "Length", "Histological_Score"])
-
-# ╔═╡ 7d855e7e-8dff-4de9-b5ee-a7b09d00d978
-if ["Histological_Score"] ⊆ xCovariates
-	md"Categorize Histological Score $(@bind isHistoScoreCat CheckBox())"
-else 
-	isHistoScoreCat = false
-end;
-
-# ╔═╡ ff672c36-1722-44d6-9003-0a3a57c05bf6
-begin 
-	vPredictorNames = copy(xCovariates)
-	
-
-	if (@isdefined hasInteractions) && (hasInteractions == "Sex Interactions" )
-		idxNotSex = findall(xCovariates.!= "Sex" .&& xCovariates.!= "Intercept")
-		vPredictorNames[idxNotSex] .= "Sex*".*xCovariates[idxNotSex]
-		vPredictorNames = vPredictorNames[Not(findall(vPredictorNames.=="Sex"))]
-	else
-		vPredictorNames = copy(xCovariates)
-		
-	end
-
-	if ["Intercept"] ⊆ xCovariates
-		vPredictorNames[findall(vPredictorNames .=="Intercept")] .= "1"
-	end
-	
-	frml = join(vPredictorNames, " + ")
-	
-md"""
-Replace `+` by `*` for interaction:
-
-$(@bind tf_frml TextField(default=frml))
-
-"""	
-
-end
-
-
-# ╔═╡ b9642a82-4595-4d3b-a240-cc43253fb2a2
-@bind bttnModel Button("Confirm")
-
-# ╔═╡ 3f34b8a0-9655-454c-8554-f95821375e90
-frml_c = Ref("");
-
-# ╔═╡ 8f39a6ee-fe9b-421e-b4ca-fc88c706f2b9
-begin
-bttnModel	
-frml_c[] = @eval $(Meta.parse("tf_frml"))
-	# tf_frml 
-md"""
-The @formula design is: $(frml_c[])    
-"""		
-end
-
-# ╔═╡ e62d4343-8261-4c49-94ac-06cb9db67f68
-begin 
-bttnModel
-contrasts = Dict(
-	:Status => EffectsCoding(base=sort(unique(dfInd.Status))[2]), 
-	:Sex => EffectsCoding(base=sort(unique(dfInd.Sex))[1]),
-	# :Histological_Score => StatsModels.FullDummyCoding(),
-)
-
-if frml_c[] != ""
-	formulaX = eval(Meta.parse(string("@formula(0 ~ ", frml_c[], ").rhs")))
-	if occursin("+", frml_c[]) || occursin("*", frml_c[])
-		vCovarNames = collect(string.(formulaX))
-	else
-		vCovarNames = [string(formulaX)]	
-	end
-	
-	if ["1"] ⊆ vCovarNames
-		vCovarNames[findall(vCovarNames .== "1")] .= "Intercept"
-	end
-	
-	idx2change = findall(occursin.("&",vCovarNames))
-	vCovarNames[idx2change]  .= replace.(vCovarNames[idx2change], " & " => "Ξ")
-	
-	mX = modelmatrix(formulaX, dfInd, hints = contrasts)
-
-	if ["Histological_Score"] ⊆ vCovarNames
-		vCovarNames[findall(vCovarNames .== "1")] .= "Intercept"
-	end
-	
-	vFrmlNames = Vector{String}()
-	
- 	if frml_c[] == "1"
-		vFrmlNames = ["(Intercept)"]
-	else
-		sch = schema(formulaX, dfInd, contrasts)
-		vFrmlNames = apply_schema(formulaX, sch) |> coefnames
-	end
-	function fix_covar_name(s::String)
-		s = replace(s, "("=>"", ")"=>"", ": "=>"_")
-		s = replace(s, " & " => "Ξ")
-	end
-
-	if isHistoScoreCat
-
-		mHS = modelmatrix(@formula(0 ~ Histological_Score).rhs, 
-				dfInd,
-				hints = Dict(:Histological_Score => StatsModels.FullDummyCoding()))
-		
-
-		
-		mX = hcat(mX[:,1:end-1], 
-			  sum(mHS[:,2:3], dims= 2),
-			  sum(mHS[:,4:6], dims= 2))
-		vFrmlNames = vcat(vFrmlNames[1:end-1,],
-						["Histological_Score: 1_2"],
-						["Histological_Score: 3_5"])
-	end
-	
-	vPseudoFrmlNames = fix_covar_name.(vFrmlNames)
-
-
-	
-	show(vFrmlNames)
-end
-end
-
-# ╔═╡ 59c324c4-8b3d-4d0d-a460-13d1a334c8eb
-begin	
-if (@isdefined mX)
-
-	md"""
-	Show X matrix $(@bind radio_X CheckBox())
-	"""		
-end	
-end
-
-# ╔═╡ ca12f163-518f-4899-8730-0bf5e019f899
-begin 
-if (@isdefined mX)
-	if radio_X
-		mX
-	else
-		md"The size of Pansteatitis X is $(size(mX, 1)) x $(size(mX, 2))."
-	end
-end
-end
-
-# ╔═╡ 372f70bf-8b76-4f8a-af3a-955622fd6424
-md"""
-## Metabolites analysis
-"""
-
-# ╔═╡ 143a5bcc-6f88-42f5-b8f9-c8487a6aa030
+# ╔═╡ 7c05a865-abf9-43d0-84a4-031ffce52162
 begin
 	#######################
 	# Plotting attributes #
 	#######################
-	# myfont = "Helvetica"
-	# mytitlefontsize = 12 
+	myfont = "Helvetica"
+	mytitlefontsize = 12 
 end;
 
-# ╔═╡ a27ebbdd-0a8b-4f11-a0ab-6a41c991ef88
+# ╔═╡ 6a81774c-6477-4994-95fe-54daf66df2db
 md"""
-### Association at the metabolite level per super class
+Select sub-class of lipids:     
+
+$(@bind rdZ Radio([\"All\", \"Triglycerides\", \"Phospholipids\"], default = \"Triglycerides\"))
 """
 
-# ╔═╡ df6118c5-c498-413b-a530-9003fa1340fd
-begin
-if (@isdefined mX)
-	###################
-	# Identity Matrix #
-	###################
-	ZI = Matrix{Float64}(I(m))
-	
-	CoefZI, CIZI, TstatZI, varZI = getCoefs(mY, mX, ZI);
+# ╔═╡ 83f15e92-b4a9-4799-b0df-73fc1ae73340
+md"""
+Select the X design matrix model:
+   
+$(if hasFishOil
+	@bind rdX Radio(["false"=>"Intercept, Group, Fish Oil, Interaction", "true"=>"CN - No Fish Oil, CN - Fish Oil, CS - No Fish Oil, CS - Fish Oil (CN: Control, CS: Statin Intolerant)"], default = "false")
+else
+	@bind rdX Radio(["false"=>"Intercept, Group"], default = "false")
+end)
+"""
 
-	dfTstatsZI = DataFrame(hcat(permutedims(TstatZI),names(dfMet)[2:end]),
-								 vcat(vPseudoFrmlNames, ["MetaboliteID"]));
-	dfTstatsZI = leftjoin(dfTstatsZI, 
-			dfRef[:,[:MetaboliteID, :super_class , :sub_class]], on = :MetaboliteID);
-
-	# need to convert for visualization
-	for i in Symbol.(vPseudoFrmlNames)
-		# dfTstatsZI[:, i] = float.(vec(dfTstatsZI[:, i]))
-		dfTstatsZI[!,i] = convert.(Float64, dfTstatsZI[!,i])
-	end		
-
-	md"""
-	Show Z matrix $(@bind radio_ZI CheckBox())
-	"""
-	
-end
-end
-
-# ╔═╡ 8da7da20-885d-43c7-a8d9-1b78baedd11d
+# ╔═╡ 812211f2-71d7-4c69-b8af-794753e67660
 begin 
-if (@isdefined mX)
-	if radio_ZI
-		ZI
+	# Get Zmat 
+	fZrawAll = "../data/data_processed/ZmatRawAll.csv"
+	fZrawTG = "../data/data_processed/ZmatRawTG.csv"
+	fZrawP = "../data/data_processed/ZmatRawPhos.csv"
+	fZrawPC = "../data/data_processed/ZmatRawPhosPC.csv"
+	# fZrawPE = "../../data/dataprocessed/ZmatRawPhosPE.csv"
+	
+	fZraw = Dict("All"=> fZrawAll,
+				 "Triglycerides"=> fZrawTG,
+				 "Phospholipids"=> fZrawP,
+				 "Phospholipids: PC"=> fZrawPC);
+	
+	dfZraw =  DataFrame(CSV.File(fZraw[rdZ]))
+	dfZraw = dfZraw[findall(x -> [x] ⊆ names(df), dfZraw.lipID),:]
+	
+	m =  length(dfZraw.lipID); #ifelse(isunpairFlag, size(df)[2]-5, size(df)[2]-2)
+	
+	is4ways = eval(Meta.parse(rdX));
+	
+	# ZI is identity matrix 
+	ZI = convert(Array{Float64, }, collect(I(m)));
+	CoefZI, CIZI, TstatZI, varZI = getCoefs(df, ZI, responseSelection = dfZraw.lipID,
+									 isunpaired = isunpairFlag, 
+									 hasFishOil = hasFishOil, 
+									 is4ways = is4ways);
+	
+	
+	# Get X and Y 
+	if hasFishOil
+		if is4ways
+			X, Y = getXY4ways(df, responseSelection = dfZraw.lipID,
+					 isunpaired = isunpairFlag);
+			covarSelection = ["1"=> "CN-No Fish Oil (intercept)", "2"=> "CN-Fish Oil",
+						  "3"=> "CS-No Fish Oil", "4"=> "CS-Fish Oil"]
+		else
+			X, Y = getXY(df, responseSelection = dfZraw.lipID,
+					 isunpaired = isunpairFlag);
+			covarSelection = ["1"=> "Intercept", "2"=> "SAMS status",
+						  "3"=> "Fish Oil", "4"=> "Interaction SAMS-Fish Oil"]
+		end
 	else
-		md"Z matrix is an identity matrix."
+		X, Y = getXYnoFishOil(df, responseSelection = dfZraw.lipID,
+					 isunpaired = isunpairFlag);
+		covarSelection = ["1"=> "Intercept", "2"=> "SAMS status"]
 	end
-end
-end
-
-# ╔═╡ 11d017f1-e15f-47df-9e23-d4d9629ebd63
-if @isdefined vPseudoFrmlNames
-	@bind xCovarFig Select(vFrmlNames, default = "Age")
-end
-
-# ╔═╡ 380feaa3-5a52-4803-a561-3f055510ae16
-begin
-if @isdefined dfTstatsZI
-	nameCovarFig = fix_covar_name(xCovarFig)
-	gdf = groupby(dfTstatsZI, :super_class);
-	dfMeanTst = combine(gdf, Symbol(nameCovarFig) => mean => Symbol(nameCovarFig)) 
-	sort!(dfMeanTst, :super_class);
 	
-	pscatter_sup = eval(Meta.parse("@df dfTstatsZI dotplot(string.(:super_class), :$(nameCovarFig), label = \"Metbolite\", legend = false)"))
-	eval(Meta.parse("@df dfMeanTst scatter!(string.(:super_class), :$(nameCovarFig), label = \"Average\", legend = :outerright, xrotation = 20, color = :orange)"))
-	hline!([0], color= :red, label = "", bottom_margin = 10mm,
-		foreground_color_legend = nothing, # remove box of legend
-		xlabel = "Super class", ylabel = string("T-statistics ", nameCovarFig), 
-		title = "T-statistics per class",
-		titlefontsize = mytitlefontsize,
-	)
-
-	savefig(string(
-		"../images/pansteatitis_mlmCI_scatter_",
-		replace(xCovarFig, " "=> "_", ":"=> "_"),
-		"_",
-		"super_class",
-		".svg")
-	)
-	
-	plot(pscatter_sup)
-end
-end
-
-# ╔═╡ 5720877a-e485-4a1d-b286-b7572909658c
-md"""
-### Association at the super class level
-"""
-
-# ╔═╡ 52868e72-74b1-4cfc-9ba6-945fe3c6db8f
-begin 
-if (@isdefined mX)	
-	###############
-	# Super Class #
-	###############
-	levelsSup = sort(unique(dfRef.super_class)); 
-	# Generate Z matrix
-	mZsup = modelmatrix(@formula(y ~ 0 + super_class).rhs, 
-						dfRef, 
-						hints = Dict(:super_class => StatsModels.FullDummyCoding()));
-
-	# true indicates correct design matrix
-	# levelsSup[(mapslices(x ->findall(x .== 1) , mZsup, dims = [2]))[:]] == dfRef.super_class
-	CoefZsp, CIZsp, TstatZsp, varZsp = getCoefs(mY, mX, mZsup);	
-	
-	md"""
-	Show Z matrix $(@bind radio_Zsp CheckBox())
-	"""		
-end	
-end
-
-# ╔═╡ 1a53fd65-8ce5-452f-98a5-129ef8d56329
-begin 
-if (@isdefined mX)
-	if radio_Zsp
-		DataFrame(hcat(Int.(mZsup[:,1:end]), dfRef.super_class[:]), vcat(levelsSup, ["Class"]))
+	# nameX contains labels for plotting
+	if isunpairFlag
+		if is4ways
+			namesX = ["CN-No Fish Oil" "CN-Fish Oil" "CS-No Fish Oil" "CS-Fish Oil"]
+		else
+    		namesX = ["Intercept" "SAMS status" "Fish Oil" "Interaction SAMS-Fish Oil"]
+		end
 	else
-		md"Z matrix design is based on super classes."
-	end
-end
-end
+    	namesX = ["Intercept" "Interaction SAMS-Fish Oil"]
+	end;
+end;
 
-# ╔═╡ 72ab7cdb-f509-48a4-b587-57de058182a8
-if @isdefined vFrmlNames
-	@bind xCovarFig_sp Select(vFrmlNames[1:end], default = "Age")
-end
-
-# ╔═╡ 1bb3bb3a-9ffe-4690-817b-ea83ce9e46b6
-begin
-	if @isdefined TstatZsp
-
-		idxCovarsup = findall(vPseudoFrmlNames[1:end] .== fix_covar_name(xCovarFig_sp))
-		idx2rmvsup = findall(levelsSup .== "NA")
-		# idxCovar = findall(vPseudoFrmlNames .== fix_covar_name(xCovarFig))
-		namesZsup = string.(permutedims(levelsSup[1:end]))
-		
-		psp = confidenceplot(
-			vec(permutedims(CoefZsp[idxCovarsup, Not(idx2rmvsup)])), 
-			levelsSup[Not(idx2rmvsup)],
-			vec(permutedims(CIZsp[idxCovarsup, Not(idx2rmvsup)])),
-			fontfamily = "Helvetica",
-			titlefontsize = mytitlefontsize,
-			xlabel = xCovarFig_sp*" Effect Size", 
-			legend = false,
-			
-			  )
-		
-		savefig(string(
-			"../images/pansteatitis_mlmCI_",
-			replace(xCovarFig_sp, " "=> "_", ":"=> "_"),
-			"_",
-			"super_class",
-			".svg")
-		)
-		plot(psp)
-
-		
-	end
-end
-
-# ╔═╡ 30f08888-0d6c-463d-afce-d60a7deade83
+# ╔═╡ 05c4ae42-c2c1-47f2-87f8-cecdd74f5505
 md"""
-### Association at the metabolite level per sub-class
+### X matrix (individual characteristics)
 """
 
-# ╔═╡ 825605ec-7c8e-4452-ba4d-63b7d5204d3a
+# ╔═╡ e1021668-35de-4ce3-b541-050d91079862
+X[1:7,:]
+
+# ╔═╡ 441ce075-1756-4ef0-a913-758214c54d29
+md"
+Two-way contingency tables considering `Group` and `FishOil` variables from the unpaired data: 
+"
+
+# ╔═╡ f0f6e03e-9c93-4756-8556-6d5f4e37bb0a
 begin 
-if (@isdefined mX)
-	#############
-	# Sub Class #
-	#############
-# 	levelsSub = sort(unique(dfRef.sub_class));
-
-# 	# Generate Z matrix
-# 	mZsub = modelmatrix(@formula(y ~ 0 + sub_class).rhs, 
-# 						dfRef, 
-# 						hints = Dict(:sub_class => StatsModels.FullDummyCoding()));	
-# 	# true indicates correct design matrix
-# 	# levelsSub[(mapslices(x ->findall(x .== 1) , mZsub, dims = [2]))[:]] == dfRef.sub_class
-# 	CoefZsb, CIZsb, TstatZsb, varZsb = getCoefs(mY, mX, mZsub);
-
-# 	##################################################
-# 	# Adjust idx by omitting groups with less than 5 #
-# 	##################################################
-
-# 	# create pansteatitis dataframe with the unique SubClassID
-# 	dfPan = select(dfRef, :sub_class);
-# 	# select subpathway with more or equal 5 counts
-# 	dfPan2 = filter(row -> row.nrow > 4,  combine(groupby(dfPan[:, :], [:sub_class]), nrow))
-
-# 	# select indices for sub_class
-# 	idxpan = findall(x -> [x] ⊆ dfPan2.sub_class, levelsSub)
-	
-
-	##################################################
-	# Adjust idx by omitting groups with less than 5 #
-	##################################################
-
-	# create pansteatitis dataframe with the unique SubClassID
-	dfPan = select(dfRef, :sub_class)
-	# select subpathway with more or equal 5 counts
-	dfPan2 = filter(row -> row.nrow > 4,  combine(groupby(dfPan[:, :], [:sub_class]), nrow))
-
-	# select indices for sub_class
-	idx_greater_4 = findall(x -> [x] ⊆ dfPan2.sub_class, dfRef.sub_class)
-	# sort sub class
-	levelsSub = sort(unique(dfRef.sub_class));
-	# select indices for sub_class
-	idxpan = findall(x -> [x] ⊆ dfPan2.sub_class, levelsSub)
-
-	dfRef_2 = filter(row -> [row.sub_class] ⊆ levelsSub[idxpan], dfRef)
-
-	# Generate Z matrix
-	mZsub = modelmatrix(@formula(y ~ 0 + sub_class).rhs, 
-						dfRef_2, 
-						hints = Dict(:sub_class => StatsModels.FullDummyCoding()));	
-	# true indicates correct design matrix
-	# levelsSub[(mapslices(x ->findall(x .== 1) , mZsub, dims = [2]))[:]] == dfRef.sub_class
-	CoefZsb, CIZsb, TstatZsb, varZsb = getCoefs(mY[:, idx_greater_4], mX, mZsub);
-
-	md"""
-	Show Z matrix $(@bind radio_Zsb CheckBox())
-	"""	
-
-end
+	xTable = freqtable(df[:, [:FishOil, :Group]], :FishOil, :Group)
+	matXfreq = collect(xTable[:,:]);
+	matXfreq = vcat(matXfreq, sum(matXfreq, dims= 1))
+	matXfreq = hcat(matXfreq, sum(matXfreq, dims= 2))
+	dfFreqX = DataFrame(matXfreq, :auto)
+	rename!(dfFreqX, Symbol.(vcat(names(xTable,2), "Total")))
+	insertcols!(dfFreqX, 1, :_ => vcat("Fish Oil: ".*(names(xTable,1)), Symbol("Total")))
 end
 
-# ╔═╡ d0044ffa-40b7-4675-95fc-e280b28a1207
+# ╔═╡ 9caddc45-cb09-418d-88ae-024fd94542f5
+md"""
+### Y matrix (outcome matrix, lipid concentrations)
+"""
+
+# ╔═╡ cdc5e3f6-b26e-4223-83c8-5b3cdf22840d
+Y[1:7,1:7]
+
+# ╔═╡ 99a47ae1-b82c-442c-8822-cbea2444c94e
+md"""
+### Z matrix (lipid characteristics)
+
+Triglycerides'usefull information to build our Z matrix:
+"""
+
+# ╔═╡ 44242c51-682c-4b3b-93e1-dc77fce4edea
+dfZraw[1:7,3:end]
+
+# ╔═╡ 3228e14e-30f3-404c-86d6-d50affe9d26b
+md"""
+### Lipid characteristic distributions
+"""
+
+# ╔═╡ cf1fd5c1-8a28-4a18-9a42-9d166447cbd8
 begin 
-if (@isdefined mX)
-	if radio_Zsb
-		DataFrame(hcat(Int.(mZsub[:,1:end]), dfRef.super_class[:]), vcat(levelsSub, ["Class"]))
-	else
-		md"Z matrix design is based on super classes."
-	end
-end
-end
-
-# ╔═╡ 63f2a028-c4a6-4205-bfa5-288a2fcb02c9
-if @isdefined vPseudoFrmlNames
-	@bind xCovarFigsub Select(vFrmlNames, default = "Age")
-end
-
-# ╔═╡ a094cdf1-bd0c-4c31-ac0b-dd453ca8075f
-begin
-if @isdefined dfTstatsZI
-	nameCovarFigsub = fix_covar_name(xCovarFigsub)
-	gdf_sub = groupby(dfTstatsZI, :sub_class);
-	dfMeanTst_sub = combine(gdf_sub, Symbol(nameCovarFigsub) => mean => Symbol(nameCovarFigsub)) 
-	sort!(dfMeanTst_sub, :sub_class);
+	oxiTable = freqtable(dfZraw.Oxidation)
+	DataFrame(Oxidized = names(oxiTable, 1), Count = collect(oxiTable[:]))
 	
-	pscatter_sub = eval(Meta.parse("@df dfTstatsZI dotplot(string.(:sub_class), :$(nameCovarFigsub), label = \"Metbolite\", legend = false)"))
-	eval(Meta.parse("@df dfMeanTst_sub scatter!(string.(:sub_class), :$(nameCovarFigsub), label = \"Average\", legend = :outerright, xrotation = 20, color = :orange)"))
-	hline!([0], color= :red, label = "", bottom_margin = 10mm,
-		fontfamily = "Helvetica",
-		foreground_color_legend = nothing, # remove box of legend
-		xlabel = "Super class", ylabel = string("T-statistics ", xCovarFigsub), 
-		title = "T-statistics per class",
-		titlefontsize = mytitlefontsize,
-	)
-
-	savefig(string(
-		"../images/pansteatitis_mlmCI_scatter_",
-		replace(xCovarFigsub, " "=> "_", ":"=> "_"),
-		"_",
-		"sub_class",
-		".svg")
-	)
-	plot(pscatter_sub)
-end
 end
 
-# ╔═╡ b9b257e4-61bf-4362-bb7f-39931ac0cc0e
-md"""
-### Association at the sub class level
-"""
 
-# ╔═╡ 86b5ad8d-65de-40f8-aff0-b82c1431712d
-if @isdefined vPseudoFrmlNames
-	@bind xCovarFig_sb Select(vFrmlNames, default = "Histological_Score")
-end
-
-# ╔═╡ d0969087-77c8-410d-b2c1-6a4a6a6a316d
-begin
-	if @isdefined TstatZsb
-		
-		idxCovarsub = findall(vPseudoFrmlNames .== fix_covar_name(xCovarFig_sb))
-		idx_sub = findall(collect(dfFreq_sub.Count) .>=5);
-		
-		psb = confidenceplot(vec(permutedims(CoefZsb[idxCovarsub, :])),#,idxpan])), 
-			dfFreq_sub.:("Sub Class")[idx_sub],
-		    # levelsSub[idxpan],
-		    vec(permutedims(CIZsb[idxCovarsub, :])),# idxpan])),
-		    xlabel = xCovarFig_sb*" Effect Size", legend = false,
-		    fontfamily = myfont,
-			titlefontsize = mytitlefontsize,
-			   )
-
-		savefig(string(
-			"../images/pansteatitis_mlmCI_",
-			replace(xCovarFig_sb, " "=> "_", ":"=> "_"),
-			"_",
-			"sub_class",
-			".svg")
-		)
-		plot(psb)
-	end
-end
-
-# ╔═╡ d98e4604-194b-4f4d-a6a9-8f62884c5985
-md"""
-**Plot showing association at the super class and sub class level**
-"""
-
-# ╔═╡ a4f12432-4b73-4beb-8e0e-9ddeee84389d
+# ╔═╡ af65283f-5aec-4c32-adbc-501dc95e79cc
 begin 
-	pspb = plot(
-		plot(
-			psp, 
-			xlabel = xCovarFig_sb*" Effect Size \n (a)"),
-		plot(
-			psb,
-			xlabel = xCovarFig_sb*" Effect Size \n (b)",
-			yticks =((0.5:1:7.5) ,dfFreq_sub.:("Sub Class")[idx_sub]) ),
-		size = (750, 400),
-		bottom_margin = 5mm,
-	)
+	plasmalogenTable = freqtable(dfZraw.Plasmalogen)
+	DataFrame(Plasmalogen = names(plasmalogenTable, 1),
+			  Count = collect(plasmalogenTable[:]))
 	
-	savefig(string(
-		"../images/pansteatitis_mlmCI_",
-		replace(xCovarFig_sb, " "=> "_", ":"=> "_"),
-		"_",
-		"sup_sub_class",
-		".svg")
-	)
-	plot(pspb)
 end
 
-# ╔═╡ 47bc75f3-a8fd-4878-9dcd-5ce7151c0820
-md"""
-## Triglycerides Analysis
-"""
-
-# ╔═╡ 9020e518-ab75-4827-b7b2-d0f25c11a0dc
-Plots.histogram2d(dfRefTG.Total_DB, dfRefTG.Total_C,
-			c= :matter, aspectratio = 0.35, xlim = [0,18],
-			nbins =18,
+# ╔═╡ 057310a6-c51b-424c-a1b4-ab186ea26d2d
+histogram2d(dfZraw.Total_DB, dfZraw.Total_C,
+			c= :matter, aspectratio = 0.35, xlim = [0,15],
 			colorbar_title = "Number of Triglycerides",
 			xlabel= "Total Double Bonds", ylabel =  "Total Carbons",
-			title = string("Number of ", "Triglycerides", " by the number of carbon \n atoms and the number of unsaturated bonds \n"),
+			title = string("Number of ", rdZ, " by the number of carbon \n atoms and the number of unsaturated bonds \n"),
 			fontfamily = myfont,
-			titlefontsize = mytitlefontsize,
-			size = (500, 500),
+			titlefontsize = 12,			
 )
 
-# ╔═╡ 8903ef6a-eff8-4f9c-8f31-374e1e2533c0
+
+# ╔═╡ 1d5f8a8c-5fca-45b4-8e84-d02efe08beae
 md"""
-### Association at the triglycerides level
+#### Scatterplots of lipid effects analyzed individually
 """
 
-# ╔═╡ a4363e40-4420-428f-aec8-9808d39f0e08
-if @isdefined vPseudoFrmlNames
-	@bind xCovarFigTG Select(vFrmlNames, default = "Age")
-end
+# ╔═╡ b4b79d34-9ac6-4e56-b7d1-9af441ae8573
+@bind slct1 Select(covarSelection, default = "3")
 
-# ╔═╡ bb96c16e-2d89-483e-891d-c636f514e30f
+# ╔═╡ 0279db65-a0a3-4814-ab12-c5b13a7195cb
+idxColXmat = parse(Int64,slct1);
+
+# ╔═╡ d6ddbbe0-b53e-4481-bbd8-d3634bbae3d9
 begin
-if (@isdefined mX)
-	###################
-	# Identity Matrix #
-	###################
-	ZItg = Matrix{Float64}(I(mTG))
-	
-	CoefZItg, CIZItg, TstatZItg, varZItg = getCoefs(mYTG, mX, ZItg);
-
-	dfTstatsZItg = DataFrame(hcat(permutedims(TstatZItg),names(dfMetTG)[2:end]),
-								 vcat(vPseudoFrmlNames, ["MetaboliteID"]));
-	dfTstatsZItg = leftjoin(dfTstatsZItg, 
-			dfRefTG[:,[:MetaboliteID, :Total_C , :Total_DB]], on = :MetaboliteID);
-
-	# need to convert for visualization
-	for i in Symbol.(vPseudoFrmlNames)
-		# dfTstatsZI[:, i] = float.(vec(dfTstatsZI[:, i]))
-		dfTstatsZItg[!,i] = convert.(Float64, dfTstatsZItg[!,i])
-	end				
-	
-	# #############################################################
-	# # Carbon chain adjusted by Unstauration level - Categorical #
-	# #############################################################
-	# # dfRefTG₂ = copy(dfRefTG)
-	# # levelsC_DB = vcat(["Intercept", "CC_≤_50", "50_<_CC_≤_55"], #"CC_>_55"],
-	# # 					levelsDB[1:end-1]);
-	# dfRefTG3 = copy(dfRefTG₂)
-	# dfRefTG3.Total_DB[findall(dfRefTG₂.Total_DB.<=2)] .=1;
-	
-	# dfRefTG3.Total_DB[findall(dfRefTG3.Total_DB.>2 .&& dfRefTG3.Total_DB.<=5)] .=2;
-	# dfRefTG3.Total_DB[findall(dfRefTG3.Total_DB.>5)] .=3;
-
-	# levelsC_DBcat = ["Intercept", "50_<_CC_≤_55","CC_>_55", "2_<_DB_≤_5","DB_>_5"];
-
-	# # Generate Z matrix
-	# mZcdb_cat = modelmatrix(@formula(y ~ 1 + Total_DB*Total_C).rhs, 
-	# 					dfRefTG3, 
-	# 					hints = Dict(:Total_C => StatsModels.DummyCoding(base =1),
-	# 								 :Total_DB => StatsModels.DummyCoding(base = 1)));
-	
-	# CoefZcdb_cat, CIZcdb_cat, TstatZcdb_cat, varZcdb_cat = getCoefs(mYTG, mX, mZcdb_cat);
-
-	
-end
-end;
-
-# ╔═╡ f578ed91-eec9-4394-8cdc-39f6511a2be9
-begin
-if (@isdefined xCovarFigTG)	
 	a = 0.25
-	namesXtg = xCovarFigTG
-	idxCovarTG = findall(vPseudoFrmlNames.==fix_covar_name(namesXtg))
-	zlim2 = maximum(abs.(TstatZItg[idxCovarTG,:]))
-	if zlim2 < 5
-		zlim2 = 5
-	end
-	ptg_scatter = Plots.scatter(
-		dfRefTG.Total_DB .+ rand(Uniform(-a,a),length(dfRefTG.Total_DB)),
-		dfRefTG.Total_C,
-		zcolor = permutedims(TstatZItg[idxCovarTG,:]), colorbar = true, m = (:bluesreds, 0.8), 
-		colorbar_title = string("\nT-statistics of ",namesXtg),
-		xticks=collect(0:1:length(unique(dfRefTG.Total_DB))-1), clims = (-zlim2, zlim2), 
+	zlim = maximum(abs.(CoefZI[idxColXmat,:]))
+	scatter(dfZraw.Total_DB .+ rand(Uniform(-a,a),length(dfZraw.Total_DB)),
+		dfZraw.Total_C,
+		zcolor = TstatZI[idxColXmat,:], colorbar = true, m = (:bluesreds, 0.8), 
+		colorbar_title = string(" \nEffect Size of ",namesX[idxColXmat]),
+		xticks=0:1:14, clims = (-zlim, zlim),
+		xlabel= "Total Double Bonds", ylabel =  "Total Carbons",
+		legend = false, grid = false, tickfontsize=8,
+		fontfamily = myfont,
+		right_margin = 10mm,  format = :svg,
+		title = string("Total Carbons according to Total Double Bonds \n with colorbar based on effect size of \n", namesX[idxColXmat]),
+		titlefontsize = mytitlefontsize,
+	)
+# savefig(string("../../images/scatterCoef_",namesX[idxRow],".svg"))
+end
+
+# ╔═╡ fb72c354-afdd-4ee3-a90d-d95f4e363094
+begin
+	zlim2 = maximum(abs.(TstatZI[idxColXmat,:]))
+	p_scatter = scatter(
+		dfZraw.Total_DB .+ rand(Uniform(-a,a),length(dfZraw.Total_DB)),
+		dfZraw.Total_C,
+		zcolor = TstatZI[idxColXmat,:], colorbar = true, m = (:bluesreds, 0.8), 
+		colorbar_title = string("\nT-statistics of ",namesX[idxColXmat]),
+		xticks=0:1:14, clims = (-zlim2, zlim2), 
 		xlabel= "Total Double Bonds", ylabel =  "Total Carbons",
 		legend = false, grid = false, tickfontsize=8, 
-		fontfamily = "Helvetica",
-		right_margin = 10mm,  format = :svg)
-		# title = string("Total Carbons according to Total Double Bonds \n with colorbar based on T-statistics of\n ", namesXtg) )
-	# savefig(string("../../images/scatterTstats_",namesX[idxRow],".svg"))
-
-	
-	savefig(string(
-		"../images/pansteatitis_mlmScatter_TG_",
-		replace(xCovarFigTG, " "=> "_", ":"=> "_"),
-		"_",
-		"db",
-		".svg")
+		fontfamily = myfont,
+		right_margin = 10mm,  format = :svg,
+		# title = string("T-statistics at the individual level \n for the ", namesX[idxColXmat]),
+		titlefontsize = mytitlefontsize,
 	)
-	plot(ptg_scatter)
-end
+	# savefig(string("../images/scatterTstats_",namesX[idxRow],".svg"))
+	savefig(string(
+	"../images/statin_scatter_",
+	replace(namesX[idxColXmat], " "=> "_"),
+	".svg"));
+	plot(p_scatter)
 end
 
-# ╔═╡ c228eba0-89d6-40fe-8d5e-94a41627c4c9
-begin
-if (@isdefined TstatZItg)		
-	# a = 0.25
-	# namesXtg = xCovarFigTG
-	# idxCovarTG = findall(vPseudoFrmlNames.==fix_covar_name(namesXtg))
-	# zlim2 = maximum(abs.(TstatZItg[idxCovarTG,:]))
-	p_db = Plots.scatter(dfRefTG.Total_DB .+ rand(Uniform(-a,a),length(dfRefTG.Total_DB)),
-		permutedims(TstatZItg[idxCovarTG,:]),
-		# zcolor = permutedims(TstatZItg[idxCovarTG,:]), colorbar = true, m = (:bluesreds, 0.8), 
-		colorbar_title = string("\nT-statistics of ",namesXtg),
-		xticks=collect(0:1:length(unique(dfRefTG.Total_DB))-1), clims = (-zlim2, zlim2), 
-		xlabel= "Total Double Bonds", ylabel =  "T-statistics",
-		legend = false, grid = false, tickfontsize=8,
-		fontfamily = "Helvetica",
-		right_margin = 10mm,  format = :svg);
+# ╔═╡ 85cc63b1-29eb-42a5-b5d8-baca354dddfd
+# begin
+# zlim_sams = maximum(abs.(TstatZI[2,:]))
+# p_scatter_sams = scatter(
+# 		dfZraw.Total_DB .+ rand(Uniform(-a,a),length(dfZraw.Total_DB)),
+# 		dfZraw.Total_C,
+# 		zcolor = TstatZI[2,:], colorbar = true, m = (:bluesreds, 0.8), 
+# 		colorbar_title = string("T-statistics of ",namesX[2]),
+# 		xticks=0:1:14, clims = (-zlim_sams, zlim_sams), 
+# 		xlabel= "Total Double Bonds", ylabel =  "Total Carbons",
+# 		legend = false, grid = false, tickfontsize=8, 
+# 		fontfamily = myfont,
+# 		right_margin = 5mm,  
+# 		format = :svg,
+# 		# title = "SAMS Status",
+# 		titlefontsize = mytitlefontsize,
+# 	)
 
-	p_c = Plots.scatter(dfRefTG.Total_C .+ rand(Uniform(-a,a),length(dfRefTG.Total_C)),
-		permutedims(TstatZItg[idxCovarTG,:]),
-		# zcolor = permutedims(TstatZItg[idxCovarTG,:]), colorbar = true, m = (:bluesreds, 0.8), 
-		colorbar_title = string("\nT-statistics of ",namesXtg),
-		xticks=minimum(dfRefTG.Total_C):1:maximum(dfRefTG.Total_C),
-		clims = (-zlim2, zlim2), 
-		xlabel= "Total Length Carbon", ylabel =  "T-statistics",
-		legend = false, grid = false, tickfontsize=8, 
-		fontfamily = "Helvetica",
-		right_margin = 10mm,  format = :svg);
+# zlim_fishoil = maximum(abs.(TstatZI[3,:]))
+# p_scatter_fishoil = scatter(
+# 		dfZraw.Total_DB .+ rand(Uniform(-a,a),length(dfZraw.Total_DB)),
+# 		dfZraw.Total_C,
+# 		zcolor = TstatZI[3,:], colorbar = true, m = (:bluesreds, 0.8), 
+# 		colorbar_title = string("T-statistics of ",namesX[3]),
+# 		xticks=0:1:14, clims = (-zlim_fishoil, zlim_fishoil), 
+# 		xlabel= "Total Double Bonds", ylabel =  "Total Carbons",
+# 		legend = false, grid = false, tickfontsize=8, 
+# 		fontfamily = myfont,
+# 		# right_margin = 10mm,  	
+# 		format = :svg,
+# 		# title = "SAMS Status",
+# 		titlefontsize = mytitlefontsize,
+# 	)
+
+# plot(p_scatter_sams, p_scatter_fishoil,
+# 	left_margin = 5mm,
+# 	bottom_margin = 10mm,
+# 	size = (900, 400))
+
+# savefig(string(
+# 	"../../images/statin_scatter_dual",
+# 	".svg"));
+
+# 	plot(p_scatter_sams, p_scatter_fishoil,
+# 	left_margin = 5mm,
+# 	bottom_margin = 10mm,
+# 	size = (900, 400))
+
+
 	
-	l = @layout [ a{0.50h}; b{0.5h} ];
-	plot(p_db, p_c, layout=l, margins=2mm, size= (700, 900))
-	
-end
-end
+# end
 
-# ╔═╡ 50332a44-81c0-4b80-ab42-517b8196294b
+# ╔═╡ fc169896-c70e-4b95-b515-4135e75b2a82
 md"""
-### Association at the unstaturation level
+### Modeling decisions
+
+We have to decide how to model the information about the lipids.
 """
 
-# ╔═╡ 63e8f438-abd0-4ee7-8121-cf557e56dc73
-if @isdefined vPseudoFrmlNames
-	@bind xCovarFigTGdb Select(vFrmlNames, default = "Age")
-end
+# ╔═╡ 0ae15367-c1fd-4d72-a5fb-4bb466fcdd32
+md"""
+Select the Z matrix:   
 
-# ╔═╡ a599374a-dfd5-45b4-b7bd-9bb728872b55
-begin
-if (@isdefined mX)	
-	################################
-	# Reduced Double-bond TG Class #
-	################################
-	dfRefTG₂ = copy(dfRefTG)
-	# max_db = 12
-	# dfRefTG₂.Total_DB[findall(dfRefTG₂.Total_DB.>=max_db)] .=max_db;
-	# levelsDB = string.(sort(unique(dfRefTG₂.Total_DB)));
+$(if rdZ == "Triglycerides"
+	(@bind slct2 Select([
+	# "~ Total C*Total DB"=> "Continuous: Total C, Total DB, Total C:Total DB", 
+	"factor(Total C, Total DB)"=> "Categorical: Total C, Total DB",
+	"factor(Total C)" => "Categorical: Total C", 
+	"factor(Total DB)"=> "Categorical: Total DB", 
+	"factor(Oxidation)"=> "Categorical: Oxidation", 
+	"factor(Plasmalogen)"=>"Categorical: Plasmalogen"], default = "factor(Total C, Total DB)"))
+elseif rdZ == "Phospholipids"
+		(@bind slct2 Select(["factor(Total DB)"=> "Categorical: Total DB", 
+	"factor(Oxidation)"=> "Categorical: Oxidation",     	
+    "factor(Plasmalogen)"=>"Categorical: Plasmalogen",
+	"factor(PC, PA, PE)"=>"Categorical: Phospholipid(PC, PA, PE)"]))
+else
+	(@bind slct2 Select(["factor(Phospho, LPC, TG)"=> "Categorical: Phospho, LPC, TG",
+	"factor(PC, PE, PA, LPC, TG)"=> "Categorical: Class(PC,PE, PA, LPC, TG)"]))
+end)
+"""
 
-	vbrks_db = [0,3,6,9,12]#collect(0:12);
-	lvls_db = vcat(
-		string.(vbrks_db[1:end-1]).*" ≤ Double Bonds < ".*string.(vbrks_db[2:end]),
-		"Double Bonds > ".*string.(vbrks_db[end]));
-	vcatdb = cut(
-				dfRefTG.Total_DB, vbrks_db; 
-				labels = lvls_db, 
-				extend = true)
+# ╔═╡ 8cf4b74d-cd75-4fb8-9adf-d853ae78d792
+begin 
+	dfZlinear = DataFrame(Total_C = dfZraw.Total_C,
+				Total_DB = dfZraw.Total_DB,
+                Interaction = dfZraw.Total_C.*dfZraw.Total_DB);
+	
+	# dfZtcdb = DataFrame(intercept = ones(Float64, size(dfZraw)[1]),
+	#             # TotalC_0_45 = dfZraw.Total_C .< 40,
+	# 			TotalC_45_55 = ((dfZraw.Total_C .>= 45) .& (dfZraw.Total_C .< 55))*1,
+	# 			TotalC_55_65 = ((dfZraw.Total_C .>= 55) .& (dfZraw.Total_C .< 65))*1,
+	# 			TotalC_65 = (dfZraw.Total_C .>= 65)*1,
+	#             # TotalDB_0_3 = dfZraw.Total_DB .< 3,
+	# 			TotalDB_3_6 = ((dfZraw.Total_DB .>= 3) .& (dfZraw.Total_DB .< 6))*1,
+	# 			TotalDB_6_9 = ((dfZraw.Total_DB .>= 6) .& (dfZraw.Total_DB .< 9))*1,
+	# 			TotalDB_9 = (dfZraw.Total_DB .>= 9)*1	);
+	
+	dfZtcdb = DataFrame(intercept = ones(Float64, size(dfZraw)[1]),
+	            # TotalC_0_45 = dfZraw.Total_C .< 40,
+	            TotalC_40_45 = ((dfZraw.Total_C .>= 40) .& (dfZraw.Total_C .< 45))*1,
+	            TotalC_45_50 = ((dfZraw.Total_C .>= 45) .& (dfZraw.Total_C .< 50))*1,
+	            TotalC_50_55 = ((dfZraw.Total_C .>= 50) .& (dfZraw.Total_C .< 55))*1,
+	            TotalC_55_60 = ((dfZraw.Total_C .>= 55) .& (dfZraw.Total_C .< 60))*1,
+	            TotalC_60_65 = ((dfZraw.Total_C .>= 60) .& (dfZraw.Total_C .< 65))*1,
+	            TotalC_65_70 = ((dfZraw.Total_C .>= 65) .& (dfZraw.Total_C .< 70))*1,
+	            TotalC_70 = (dfZraw.Total_C .>= 70)*1,
+	            # TotalDB_0_3 = dfZraw.Total_DB .< 3,
+	            TotalDB_3_6 = ((dfZraw.Total_DB .>= 3) .& (dfZraw.Total_DB .< 6))*1,
+	            TotalDB_6_9 = ((dfZraw.Total_DB .>= 6) .& (dfZraw.Total_DB .< 9))*1,
+	            TotalDB_9 = (dfZraw.Total_DB .>= 9)*1	);	
+	
+	
+	dfZtc = DataFrame(intercept = ones(Float64, size(dfZraw)[1]),
+	            # TotalC_0_45 = dfZraw.Total_C .< 40,
+				TotalC_40_45 = ((dfZraw.Total_C .>= 40) .& (dfZraw.Total_C .< 45))*1,
+				TotalC_45_50 = ((dfZraw.Total_C .>= 45) .& (dfZraw.Total_C .< 50))*1,
+				TotalC_50_55 = ((dfZraw.Total_C .>= 50) .& (dfZraw.Total_C .< 55))*1,
+				TotalC_55_60 = ((dfZraw.Total_C .>= 55) .& (dfZraw.Total_C .< 60))*1,
+				TotalC_60_65 = ((dfZraw.Total_C .>= 60) .& (dfZraw.Total_C .< 65))*1,
+				TotalC_65_70 = ((dfZraw.Total_C .>= 65) .& (dfZraw.Total_C .< 70))*1,
+				TotalC_70 = (dfZraw.Total_C .>= 70)*1  );
+	
+	# dfZdbcat = DataFrame(intercept = ones(Float64, size(dfZraw)[1]),
+ #                DoubleBound_1 = (dfZraw.Total_DB .== 1)*1,
+ #                DoubleBound_2 = (dfZraw.Total_DB .== 2)*1,
+ #                DoubleBound_3 = (dfZraw.Total_DB .== 3)*1,
+ #                DoubleBound_4 = (dfZraw.Total_DB .== 4)*1,
+ #                DoubleBound_5 = (dfZraw.Total_DB .== 5)*1,
+ #                DoubleBound_6 = (dfZraw.Total_DB .== 6)*1,
+ #                DoubleBound_7 = (dfZraw.Total_DB .== 7)*1,
+ #                DoubleBound_8 = (dfZraw.Total_DB .== 8)*1,
+ #                DoubleBound_9 = (dfZraw.Total_DB .== 9)*1,
+ #                MoreThan9 = (dfZraw.Total_DB .> 9)*1 );
 
-	dfRefTG₂.Total_DB_cat = vcatdb
-  
-	levelsDB = lvls_db;
+	dfZdbcat = DataFrame(intercept = ones(Float64, size(dfZraw)[1]),
+			TotalDB_3_6 = ((dfZraw.Total_DB .>= 3) .& (dfZraw.Total_DB .< 6))*1,
+            TotalDB_6_9 = ((dfZraw.Total_DB .>= 6) .& (dfZraw.Total_DB .< 9))*1,
+            TotalDB_9 = (dfZraw.Total_DB .>= 9)*1	);
 	
-	# true indicates correct design matrix
-	# levelsDB[(mapslices(x ->findall(x .== 1) , mZdb, dims = [2]))[:]] == string.(dfRefTG₂.Total_DB)
+	
+	dfZoxy = DataFrame(intercept = ones(Float64, size(dfZraw)[1]),
+                Oxidized = (dfZraw.Oxidation .== "yes").*1.0);
+	
+	dfZplsm = DataFrame(intercept = ones(Float64, size(dfZraw)[1]),
+                plasmenyl = (dfZraw.Plasmalogen .== "plasmenyl")*1,
+                plasmanyl = (dfZraw.Plasmalogen .== "plasmanyl")*1 );
+	
+	dfZphsph = DataFrame(PC = ones(Float64, size(dfZraw)[1]),
+                PA = (occursin.(r"PA", dfZraw.Lipids))*1.0,
+                PE = (occursin.(r"PE", dfZraw.Lipids))*1.0 );
+	
+	dfZppplt = DataFrame(intercept = ones(Float64, size(dfZraw)[1]),
+				PC = (occursin.(r"GP01", dfZraw.Class))*1.0,
+				PE = (occursin.(r"GP02", dfZraw.Class))*1.0,
+				PA = (occursin.(r"GP10", dfZraw.Class))*1.0,
+				LPC = (occursin.(r"GP0105", dfZraw.Class))*1.0,
+				TG = (occursin.(r"GL0301", dfZraw.Class))*1.0);
+	
+	dfZplt = DataFrame(intercept = ones(Float64, size(dfZraw)[1]),
+				Phospho = (occursin.(r"GP01|GP02|GP10", dfZraw.Class))*1.0,
+				LPC = (occursin.(r"GP0105", dfZraw.Class))*1.0,
+				TG = (occursin.(r"GL0301", dfZraw.Class))*1.0);
+	
+	#########################
+	# Z matrix dictionaries # 
+	#########################
+	
+	dfZ = Dict("~ Total C*Total DB"=>dfZlinear, 
+			   	"factor(Total C, Total DB)"=>dfZtcdb,
+				"factor(Total C)"=>dfZtc,
+				"factor(Total DB)"=>dfZdbcat,
+				"factor(Oxidation)"=>dfZoxy,
+				"factor(Plasmalogen)"=>dfZplsm,
+				"factor(PC, PA, PE)"=>dfZphsph,
+				"factor(PC, PE, PA, LPC, TG)"=>dfZppplt,
+				"factor(Phospho, LPC, TG)"=>dfZplt);
+	
+	classZ = Dict("~ Total C*Total DB"=>" carbon count and degree of unsaturation", 
+			   	"factor(Total C, Total DB)"=>"carbon count and degree of unsaturation",
+				"factor(Total C)"=>"carbon count",
+				"factor(Total DB)"=>"degree of unsaturation",
+				"factor(Oxidation)"=>"oxidation",
+				"factor(Plasmalogen)"=>"plasmalogen",
+				"factor(PC, PA, PE)"=>"phospholipids class",
+				"factor(PC, PE, PA, LPC, TG)"=>"lipid class",
+				"factor(Phospho, LPC, TG)"=> "Phospho, LPC, TG");
+	
 
-	# levelsDB = "Double Bond = ".*levelsDB;
-	# levelsDB[end] = "Double Bond ≥ "*string(max_db);
+	dict_namesZ = Dict("~ Total C*Total DB"=>names(dfZlinear), 
+			   	"factor(Total C, Total DB)"=>
+					[
+						"Intercept", 
+						"40 ≤ Total Carbon < 45",
+						"45 ≤ Total Carbon < 50",
+						"50 ≤ Total Carbon < 55",
+						"55 ≤ Total Carbon < 60",
+						"60 ≤ Total Carbon < 65",
+						"65 ≤ Total Carbon < 70",
+						"Total Carbon ≥ 70", 
+						"3 ≤ Double Bonds < 6",
+						"6 ≤ Double Bonds < 9",
+						"Double Bonds ≥ 9",
+						
+					],
+				"factor(Total C)"=>
+					[
+						"Total Carbon < 40", 
+						"40 ≤ Total Carbon < 45",
+						"45 ≤ Total Carbon < 50",
+						"50 ≤ Total Carbon < 55",
+						"55 ≤ Total Carbon < 60",
+						"60 ≤ Total Carbon < 65",
+						"65 ≤ Total Carbon < 70",
+						"Total Carbon ≥ 70",
+					],
+				"factor(Total DB)"=>
+					[
+						"Double Bonds <  3", 
+						"3 ≤ Double Bonds < 6",
+						"6 ≤ Double Bonds < 9",
+						"Double Bonds ≥ 9",
+					],
+				"factor(Oxidation)"=>names(dfZoxy),
+				"factor(Plasmalogen)"=>names(dfZplsm),
+				"factor(PC, PA, PE)"=>names(dfZphsph),
+				"factor(PC, PE, PA, LPC, TG)"=>names(dfZppplt),
+				"factor(Phospho, LPC, TG)"=>names(dfZplt));
+
+
 	
 	
-	# Generate Z matrix
-	mZdb_cat = modelmatrix(@formula(y ~ 0 + Total_DB_cat).rhs, 
-						dfRefTG₂, 
-						hints = Dict(:Total_DB_cat => StatsModels.FullDummyCoding()));
-	
-	CoefZdb, CIZdb, TstatZdb, varZdb = getCoefs(mYTG, mX, mZdb_cat);
-end
+	namesZ =dict_namesZ[slct2]; # names(dfZ[slct2]);
+	Z = Matrix{Float64}(dfZ[slct2]);
+	CoefZ, CIZ, TstatZ, varZ = getCoefs(df, Z, responseSelection = dfZraw.lipID,
+								  isunpaired = isunpairFlag, hasFishOil = hasFishOil,
+								  is4ways = is4ways);
 end;
 
+# ╔═╡ e5d8c7f5-d85c-4a61-b631-e9ebccb19343
+md"""
+#### Z mat
+"""
 
-# ╔═╡ ce42d8b6-003e-4e5c-83ef-41372a3526b8
-begin
-	if @isdefined TstatZdb
-		
-		idxCovarTGdb = findall(vPseudoFrmlNames .== fix_covar_name(xCovarFigTGdb))
-		namesZdb = string.(permutedims(levelsDB[1:end]))
-		ptg_db = confidenceplot(
-				vec(permutedims(CoefZdb[idxCovarTGdb,:])), 
-				vec(namesZdb),
-				vec(permutedims(CIZdb[idxCovarTGdb,:])),
-				fontfamily = myfont,
-				xlabel = xCovarFigTGdb*" Effect Size", legend = false,
-		)
+# ╔═╡ 172d4831-fa88-4716-8d01-2385c0ac30f2
+dfZ[slct2][1:5,:]
 
-		savefig(string(
-			"../images/pansteatitis_mlmCI_TG_",
-			replace(xCovarFigTGdb, " "=> "_", ":"=> "_"),
-			"_",
-			"db",
-			".svg")
-		)
-		plot(ptg_db)
+# ╔═╡ 912e1c54-0653-477d-a486-2e11242588bd
+md"""
+### Results - MLM coefficients
+"""
+
+# ╔═╡ 87d297f3-a28f-40d8-9ca9-966b9e43bc31
+md"""
+##### Confidence intervals of coefficients
+"""
+
+# ╔═╡ 81b569d1-40ba-48af-b992-94153c9737e4
+md"""
+$(@bind slct3 Select(covarSelection, default = "3"))
+"""
+
+# ╔═╡ d40052d8-e671-4ffb-ab3d-d5c627286c6c
+idxColXmatCI = parse(Int64,slct3);
+
+# ╔═╡ e542508f-6564-4390-8414-95838cf641fd
+begin 
+if [slct2] ⊆ ["factor(Total C, Total DB)"]
+	idx = 2
+
+    # Carbon
+    namesZtc =dict_namesZ["factor(Total C)"];
+
+    CoefZtc, CIZtc, TstatZtc, varZtc = getCoefs(
+                                        df, 
+                                        Matrix{Float64}(dfZ["factor(Total C)"]),
+                                        responseSelection = dfZraw.lipID,
+                                        isunpaired = isunpairFlag,
+                                        hasFishOil = hasFishOil,
+                                        is4ways = is4ways
+                                        );	
+    # Double bonds
+    namesZdb =dict_namesZ["factor(Total DB)"];
+
+    CoefZdb, CIZdb, TstatZdb, varZdb = getCoefs(
+                                        df, 
+                                        Matrix{Float64}(dfZ["factor(Total DB)"]),
+                                        responseSelection = dfZraw.lipID,
+                                        isunpaired = isunpairFlag,
+                                        hasFishOil = hasFishOil,
+                                        is4ways = is4ways
+                                        );	
+    # Join results
+    namesZtcdb = vcat(namesZtc[2:end], namesZdb[2:end])
+    CoefZtcdb  = hcat(CoefZtc[:, 2:end] , CoefZdb[:, 2:end])
+    CIZtcdb    = hcat(CIZtc[:, 2:end] , CIZdb[:, 2:end])
+    TstatZtcdb = hcat(TstatZtc[:, 2:end] , TstatZdb[:, 2:end])
+    varZtcdb   = hcat(varZtc[:, 2:end] , varZdb[:, 2:end])
+
+    # p_ci_tcdb = confidenceplot(
+    #                 CoefZtcdb[idxColXmatCI, :],	
+    #                 namesZtcdb,
+    #                 CIZtcdb[idxColXmatCI, :],
+    #                 xlabel = namesX[idxColXmatCI]*" Effect Size", legend = false,
+    #                 fontfamily = myfont,
+    #                 title = string("Unadjusted") , 
+    #                 titlefontsize = mytitlefontsize,
+    #                 yaxis = false, 
+    #                 left_margin = -10mm,
+    #                 # size=(800,700), 
+    #             )
+    # p_ci_2 = confidenceplot(
+    #             CoefZ[idxColXmatCI, idx:end],	
+    #             namesZ[idx:end],
+    #             CIZ[idxColXmatCI,idx:end],
+    #             xlabel = namesX[idxColXmatCI]*" Effect Size", legend = false,
+    #             fontfamily = myfont,
+    #             title = string("Adjusted") , 
+    #             titlefontsize = mytitlefontsize,
+    #             right_margin = -20mm,
+    #             # size=(800,700), 
+    # )
+    
+    p_ci_unadjusted = confidenceplot(
+                    CoefZtcdb[idxColXmatCI, :],	
+                    namesZtcdb,
+                    CIZtcdb[idxColXmatCI, :],
+                    xlabel = namesX[idxColXmatCI]*" Effect Size", legend = false,
+                    fontfamily = myfont,
+                    title = string("Unadjusted") , 
+                    titlefontsize = mytitlefontsize,
+                    yaxis = true, 
+                    right_margin = -10mm, 
+                    # size=(800,700), 
+                )
+    p_ci_adjusted = confidenceplot(
+                CoefZ[idxColXmatCI, idx:end],	
+                namesZ[idx:end],
+                CIZ[idxColXmatCI,idx:end],
+                xlabel = namesX[idxColXmatCI]*" Effect Size", legend = false,
+                fontfamily = myfont,
+                title = string("Adjusted") , 
+                titlefontsize = mytitlefontsize,
+                yaxis = false, 
+                left_margin = -20mm,
+                # size=(800,700), 
+    )
+    
+    
+    # plot(p_ci_2, p_ci_tcdb, size = (750, 500)) 
+    p_ua = plot(p_ci_unadjusted, p_ci_adjusted, size = (750, 500)) 
+
+	# save in png
+	png(p_ua,string(
+			    "../images/statin_mlmCI_unadjusted_",
+			    replace(namesX[idxColXmatCI], " "=> "_"),
+			    "_",
+			    replace(classZ[slct2], " "=> "_"),
+			    ".png"
+			 ) 
+	)
+
+	# save in svg
+    savefig(string(
+			    "../images/statin_mlmCI_unadjusted_",
+			    replace(namesX[idxColXmatCI], " "=> "_"),
+			    "_",
+			    replace(classZ[slct2], " "=> "_"),
+			    ".svg"
+			)
+	)
+	
+    # plot(p_ci_2, p_ci_tcdb, size = (750, 500)) 
+    plot(p_ci_unadjusted, p_ci_adjusted, size = (750, 500))
+else
+	if [slct2] ⊆ ["factor(Total C)", "factor(Total DB)"]
+		idx = 1
+	else
+		idx = 2
 	end
-end
-
-# ╔═╡ 87f44b92-74a1-4524-b227-a93a3ac895ad
-Plots.bar(
-	freqtable(string.(vcatdb)), 
-	xticks = (collect(1:5),namesZdb), 
-	rotation = 45,
-	legend = false,
-	bottom_margin = 10mm
-)
-
-# ╔═╡ a46aa97d-679a-4b37-a6c0-a6c5148be92f
-md"""
-### Association at the carbon chain level
-"""
-
-# ╔═╡ 23f880c2-b334-4472-9c93-733ebdc56ecf
-if @isdefined vPseudoFrmlNames
-	@bind xCovarFigTGc Select(vFrmlNames, default = "Age")
-end
-
-# ╔═╡ 0f84687b-38b0-4302-99e6-43e3aa2c6443
-begin
-if (@isdefined mX)	
-	#########################
-	# Carbon chain TG Class #
-	#########################
-
-	vbrks_c = [0,50,55,60,65]
-	lvls_c = vcat(
-		string.(vbrks_c[1:end-1]).*" ≤ Total Carbon < ".*string.(vbrks_c[2:end]),
-		"Total Carbon > ".*string.(vbrks_c[end]));
-	vcatc = cut(
-				dfRefTG.Total_C, vbrks_c; 
-				labels = lvls_c, 
-				extend = true)
-
-	dfRefTG₂.Total_C_cat = vcatc
-	levelsC = lvls_c
-	# Generate Z matrix
-	mZc_cat = modelmatrix(@formula(y ~ 0 + Total_C_cat).rhs, 
-						dfRefTG₂, 
-						hints = Dict(
-								:Total_C_cat => StatsModels.FullDummyCoding()));
-
-
-	CoefZc, CIZc, TstatZc, varZc = getCoefs(mYTG, mX, mZc_cat);
-end
-end;
-
-# ╔═╡ 0e510137-2641-43a1-af41-fb1fae61ecdf
-begin
-	if @isdefined TstatZc
-		
-		idxCovarTGc = findall(vPseudoFrmlNames .== fix_covar_name(xCovarFigTGc))
-		# namesZc = string.(permutedims(levelsC[1:end]))
-		ptg_c = confidenceplot(
-			vec(permutedims(CoefZc[idxCovarTGc,:])), 
-			levelsC,
-			vec(permutedims(CIZc[idxCovarTGc,:])),
-			xlabel = xCovarFigTGc*" Effect Size", legend = false,
+	
+	p_ci = confidenceplot(
+			CoefZ[idxColXmatCI, idx:end],	
+			namesZ[idx:end],
+			CIZ[idxColXmatCI,idx:end],
+			xlabel = namesX[idxColXmatCI]*" Effect Size", legend = false,
 			fontfamily = myfont,
-		)
-
-		savefig(string(
-			"../images/pansteatitis_mlmCI_TG_",
-			replace(xCovarFigTGc, " "=> "_", ":"=> "_"),
-			"_",
-			"c",
-			".svg"))
-		
-		plot(ptg_c)
-	end
+			title = string("Confidence interval for \n the ", classZ[slct2]) , 
+			titlefontsize = mytitlefontsize,
+			# size=(800,700), 
+	)
+	savefig(string(
+		"../images/statin_mlmCI_",
+		replace(namesX[idxColXmatCI], " "=> "_"),
+		"_",
+		replace(classZ[slct2], " "=> "_"),
+		".svg"))
+	plot(p_ci)
+    
+end
 end
 
-# ╔═╡ 07eb16a0-68bf-4cd5-bd8c-2387497e57d6
-Plots.bar(
-	freqtable(string.(vcatc)), 
-	xticks = (collect(1:5),lvls_c), 
-	rotation = 45,
-	legend = false,
-	bottom_margin = 10mm
-)
-
-# ╔═╡ f77f6c00-3a8a-45f6-a3d0-801693ea6812
-md"""
-### Association at the carbon and unsaturation level (categorical)
-"""
-
-# ╔═╡ 57ddd596-68b7-43bd-93a8-998d16848f85
-if @isdefined vPseudoFrmlNames
-	@bind xCovarFigTGcdbcat Select(vFrmlNames, default = "Age")
-end
-
-# ╔═╡ e80aee70-62ad-446e-884c-c1785218f9cb
+# ╔═╡ f229fdba-be0c-436d-9391-99ee85b52a2b
 begin
-if (@isdefined mX)	
-	##########################################
-	# Carbon chain and Double Bonds TG Class #
-	##########################################
-
-	mZcdb_cat = modelmatrix(@formula(y ~ 1 + Total_C_cat + Total_DB_cat).rhs, 
-						dfRefTG₂, 
-						hints = Dict(
-								:Total_C_cat => StatsModels.DummyCoding(base = 			levels(dfRefTG₂.Total_C_cat)[1]),
-							    :Total_DB_cat => StatsModels.DummyCoding(base = 			levels(dfRefTG₂.Total_DB_cat)[1])));
-
-	levelsCdb_cat = vcat(["Intercept"], 
-						 levels(dfRefTG₂.Total_C_cat)[2:end],
-						 levels(dfRefTG₂.Total_DB_cat)[2:end])
-
-	
-
-	CoefZcdbcat, CIZcdbcat, TstatZcdbcat, varZcdbcat = getCoefs(mYTG, mX, mZcdb_cat);
-end
+	dfCIval = DataFrame(
+			Variables = namesZ[idx:end],
+		    Coeffecient = round.(CoefZ[idxColXmatCI, idx:end], digits=3),  
+			L = round.(CoefZ[idxColXmatCI, idx:end] - CIZ[idxColXmatCI,idx:end], digits=3),
+			H = round.(CoefZ[idxColXmatCI, idx:end] + CIZ[idxColXmatCI,idx:end], digits =3),
+			  )
+	# header = ([ "L", "H"])
+	# mData = hcat(
+	# 	round.(CoefZ[idxColXmatCI, idx:end] - CIZ[idxColXmatCI,idx:end], digits=3),
+	# 	round.(CoefZ[idxColXmatCI, idx:end] + CIZ[idxColXmatCI,idx:end], digits =3),
+	# 		)
+	# DataFrames.PrettyTables.pretty_table(mData, backend = Val(:latex), header = header)
+		
+	dfCIval
 end;
 
-# ╔═╡ 4c237533-1186-4b7f-81a0-8fe3a271c437
+# ╔═╡ 73e5c9dd-61ce-41fe-99d5-1a02bdfd6f5e
 begin
-	if @isdefined TstatZc
+	if ((slct2 == "factor(Oxidation)") | (slct2 == "factor(Plasmalogen)"))
+		if slct2 == "factor(Oxidation)"
+			isOxi = true
+		else
+			isOxi = false
+		end
 		
-		idxCovarTGcdbcat = findall(vPseudoFrmlNames .== fix_covar_name(xCovarFigTGcdbcat))
-		# namesZc = string.(permutedims(levelsC[1:end]))
+	dfCatego = DataFrame(Catego = ifelse(isOxi, dfZraw.Oxidation, dfZraw.Plasmalogen),
+                Effect  = CoefZI[idxColXmatCI,:],
+                Tstats  = TstatZI[idxColXmatCI,:]);  
+
+	@df dfCatego violin(string.(:Catego),:Effect , linewidth=0, legend = false,
+    	xlabel = classZ[slct2],
+		ylabel = string("Effect Size of ",namesX[idxColXmatCI]),
+		grid = false,
+    	title = string("Violin plot of effect size of ", namesX[idxColXmatCI],
+				" \naccording to ",	classZ[slct2]," for the triglycerides"))
+	end
+# savefig(string("../../images/violinOxyCoef_",namesX[idxRow],".svg"))
+end
 
 
-		# Join results
-	    namesZtcdb = vcat(levelsC[2:end], levelsDB[2:end]) 
-	    CoefZtcdb  = hcat(CoefZc[:, 2:end], CoefZdb[:, 2:end])
-	    CIZtcdb    = hcat(CIZc[:, 2:end] , CIZdb[:, 2:end])
-	    TstatZtcdb = hcat(TstatZc[:, 2:end] , TstatZdb[:, 2:end])
-	    varZtcdb   = hcat(varZc[:, 2:end] , varZdb[:, 2:end])
+
+# ╔═╡ 0db0fbbd-ddb9-42c4-9112-79119b834164
+begin 
+	if ((slct2 == "factor(Oxidation)") | (slct2 == "factor(Plasmalogen)"))
+		
+	@df dfCatego violin(string.(:Catego),:Tstats , linewidth=0, legend = false,
+    	xlabel = classZ[slct2],
+		ylabel = string("Effect Size of ",namesX[idxColXmatCI]),
+		grid = false,
+    	title = string("Violin plot of T-statistics of ", namesX[idxColXmatCI],
+				" \naccording to ",	classZ[slct2]," for the triglycerides"))
+		# savefig(string("../../images/violinOxyTstats_",namesX[idxRow],".svg"))
+	end
+end
+
+# ╔═╡ 99481d6d-edce-4aba-92ac-a3aa2a689a0d
+begin
+	# To estimate P-values based on the T-statistics  
+	# sampleN = 98
+	# ccdf.(TDist(sampleN-1), abs.(TstatZTcDb[4,:])).*2
+	# ccdf.(TDist(sampleN-1), abs.(TstatZtcdb)).*2
 	
-		p_ci_tcdb_unadjusted = confidenceplot(
-					vec(CoefZtcdb[idxCovarTGcdbcat, :]),	
-					namesZtcdb,
-					vec(CIZtcdb[idxCovarTGcdbcat, :]),
-					xlabel = xCovarFigTGcdbcat*" Effect Size", legend = false,
-					# xlim = (-0.25,0.25),
-					fontfamily = myfont,
-					title = string("Unadjusted") , 
-					titlefontsize = mytitlefontsize,
-					yaxis = true, 
-					left_margin = 10mm,
-					# size=(800,700),
-					)
-
-		
-		ptg_cdbcat_adjusted = confidenceplot(
-				vec(permutedims(CoefZcdbcat[idxCovarTGcdbcat, 2:end])), 
-				levelsCdb_cat[2:end],
-				vec(permutedims(CIZcdbcat[idxCovarTGcdbcat, 2:end])),
-				xlabel = xCovarFigTGcdbcat*" Effect Size", 
-				# xlim = (-0.25,0.25),
-				title = string("Adjusted") , 
-				legend = false,
-				fontfamily = myfont,
-				titlefontsize = mytitlefontsize,
-				yaxis = false, 
-	            left_margin = -20mm,
-		)
-
-		p_ua = plot(p_ci_tcdb_unadjusted, ptg_cdbcat_adjusted, size = (750, 440)) 
-
-		
-		savefig(string(
-			"../images/pansteatitis_mlmCI_TG_",
-			replace(xCovarFigTGcdbcat, " "=> "_", ":"=> "_"),
-			"_",
-			"cdbcat",
-			".svg")
-		)
-		plot(p_ua)
-	end
+	
+	
 end
 
-# ╔═╡ 7097bd8d-bb77-45fc-a101-c157519abff6
- confidenceplot(
-					vec(CoefZtcdb[idxCovarTGcdbcat, :]),	
-					namesZtcdb,
-					vec(CIZtcdb[idxCovarTGcdbcat, :]),
-					xlabel = xCovarFigTGcdbcat*" Effect Size", legend = false,
-					# xlim = (-1,1),
-					fontfamily = myfont,
-					title = string("Unadjusted") , 
-					titlefontsize = mytitlefontsize,
-					yaxis = true, 
-					left_margin = 10mm,
-					# size=(800,700),
-					)
+# ╔═╡ 814c68ce-715d-44bd-813f-cbaaf5cc303f
+# begin 
+# plot((CoefZ[idxColXmatCI,:]), ribbon = CIZ[idxColXmatCI,:],
+#         label= namesX[idxColXmatCI],xlabel= classZ[slct2], ylabel = "Effect size",
+#         legend =:outerright, lw = 2, marker = :circle,
+#         xticks = (collect(1:size(Z)[2]), namesZ), xrotation = 45, size= (750, 500),
+# 		bottom_margin = 10mm, format = :svg,
+#         title = string("Effect Size with its confidence interval\n  of ", namesX[idxColXmatCI]," according to ", classZ[slct2]) )
+# hline!([0], color = :red, label = "")	
+# end
+# # savefig(string("../../images/mlmCI_",namesX[idxRow],"_Saturation",".svg"))
 
-# ╔═╡ 836efb58-18ff-4a3e-8a55-5b0a4457a13d
-confidenceplot(
-				vec(permutedims(CoefZcdbcat[idxCovarTGcdbcat, 2:end])), 
-				levelsCdb_cat[2:end],
-				vec(permutedims(CIZcdbcat[idxCovarTGcdbcat, 2:end])),
-				xlabel = xCovarFigTGcdbcat*" Effect Size", 
-				# xlim = (-0.25,0.25),
-				title = string("Adjusted") , 
-				legend = false,
-				fontfamily = myfont,
-				titlefontsize = mytitlefontsize,
-				# yaxis = false, 
-	            left_margin = 10mm,
-)
-
-# ╔═╡ 8f279342-3e6d-408b-b9d1-023be592044f
-md"""
-### Association at the carbon number and unsaturation level as continuous variables
-"""
-
-# ╔═╡ e1a61549-25c7-412c-8a9a-11251b8a81ae
-if @isdefined vPseudoFrmlNames
-	@bind xCovarFigTGcdb Select(vFrmlNames, default = "Histological_Score")
-end
-
-# ╔═╡ 5d166d4a-e6c9-4bca-a060-32985ca63ac6
-begin
-if (@isdefined mX)	
-	###############################################
-	# Carbon chain adjusted by Unstauration level #
-	###############################################
-	# Generate Z matrix
-
-	dfRefTG₂.Total_C_cont = float.(dfRefTG₂.Total_C)./(maximum(dfRefTG₂.Total_C))#5 # per six unit Carbon
-	dfRefTG₂.Total_DB_cont = float.(dfRefTG₂.Total_DB)./(maximum(dfRefTG₂.Total_DB))
-
-	levelsC_DB = ["Intercept", "Double Bond","Carbon Chain", "DoubleBondΞCarbonChain"];
-
-	# Generate Z matrix
-	mZcdb_cont = modelmatrix(@formula(y ~ 1 + Total_DB_cont*Total_C_cont).rhs, 
-						dfRefTG₂);
-
-	CoefZcdb, CIZcdb, TstatZcdb, varZcdb = getCoefs(mYTG, mX, mZcdb_cont);
-end
-end;	
-
-# ╔═╡ 10793541-0c79-4195-980d-1e9a38755e45
-begin
-	if @isdefined TstatZc
-		
-		idxCovarTGcdb = findall(vPseudoFrmlNames .== fix_covar_name(xCovarFigTGcdb))
-		namesZcdb = string.(permutedims(levelsC_DB[2:end]))
-		ptg_cdb = confidenceplot(vec(permutedims(CoefZcdb[idxCovarTGcdb,2:end])), 
-				   vec(namesZcdb),
-				   vec(permutedims(CIZcdb[idxCovarTGcdb,2:end])),
-				   xlabel = xCovarFigTGcdb*" Effect Size", legend = false,
-				   fontfamily = myfont,
-		)
-		
-		savefig(string(
-			"../images/pansteatitis_mlmCI_TG_",
-			replace(xCovarFigTGcdb, " "=> "_", ":"=> "_"),
-			"_",
-			"cdb",
-			".svg")
-		)
-		plot(ptg_cdb)		
-	end
-end
-
-# ╔═╡ d72b812f-6aa5-4b89-96f1-6941d666c094
+# ╔═╡ bd10f94b-33b4-450c-90a5-e3ab42dbfb93
 md"""
 ## References
 
->[Koelmel, J. P. (2018). Lipidomics for wildlife disease etiology and biomarker discovery: a case study of pansteatitis outbreak in South Africa (part-I), NIH Common Fund's National Metabolomics Data Repository (NMDR) website, the Metabolomics Workbench, https://www.metabolomicsworkbench.org, Summary of Study ST001052, doi: 10.21228/M8JH5X](https://www.metabolomicsworkbench.org/data/DRCCMetadata.php?Mode=Study&StudyID=ST001052&StudyType=MS&ResultType=1)
+	Liang, J. W., Nichols, R. J., Sen, Ś.,  Matrix Linear Models for High-Throughput Chemical Genetic Screens, Genetics, Volume 212, Issue 4, 1 August 2019, Pages 1063–1073, https://doi.org/10.1534/genetics.119.302299
 
->[Koelmel, J. P., Ulmer, C. Z., Fogelson, S., Jones, C. M., Botha, H., Bangma, J. T., Guillette, T. C., Luus-Powell, W. J., Sara, J. R., Smit, W. J., Albert, K., Miller, H. A., Guillette, M. P., Olsen, B. C., Cochran, J. A., Garrett, T. J., Yost, R. A., & Bowden, J. A. (2019). Lipidomics for wildlife disease etiology and biomarker discovery: a case study of pansteatitis outbreak in South Africa. Metabolomics : Official journal of the Metabolomic Society, 15(3), 38. https://doi.org/10.1007/s11306-019-1490-9](https://doi.org/10.1007/s11306-019-1490-9)
-	
->[Dieterle F, Ross A, Schlotterbeck G, Senn H. Probabilistic Quotient Normalization as Robust Method to Account for Dilution of Complex Biological Mixtures. Application in 1H NMR Metabonomics. Analytical Chemistry. 2006;78: 4281–4290. doi:10.1021/ac051632c](https://doi.org/10.1021/ac051632c)
+	Dieterle F, Ross A, Schlotterbeck G, Senn H. Probabilistic Quotient Normalization as Robust Method to Account for Dilution of Complex Biological Mixtures. Application in 1H NMR Metabonomics. Analytical Chemistry. 2006;78: 4281–4290. doi:10.1021/ac051632c
 
->[Hastie, T., Tibshirani, R., Sherlock, G., Eisen, M., Brown, P. and Botstein, D., Imputing Missing Data for Gene Expression Arrays, Stanford University Statistics Department Technical report (1999), http://www-stat.stanford.edu/~hastie/Papers/missing.pdf Olga Troyanskaya, Michael Cantor, Gavin Sherlock, Pat Brown, Trevor Hastie, Robert Tibshirani, David Botstein and Russ B. Altman, Missing value estimation methods for DNA microarrays BIOINFORMATICS Vol. 17 no. 6, 2001 Pages 520-525](http://www-stat.stanford.edu/~hastie/Papers/missing.pdf)
+	Hastie, T., Tibshirani, R., Sherlock, G., Eisen, M., Brown, P. and Botstein, D., Imputing Missing Data for Gene Expression Arrays, Stanford University Statistics Department Technical report (1999), http://www-stat.stanford.edu/~hastie/Papers/missing.pdf Olga Troyanskaya, Michael Cantor, Gavin Sherlock, Pat Brown, Trevor Hastie, Robert Tibshirani, David Botstein and Russ B. Altman, Missing value estimation methods for DNA microarrays BIOINFORMATICS Vol. 17 no. 6, 2001 Pages 520-525
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
-CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
-ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DataFramesMeta = "1313f7d8-7da2-5740-9ea0-a2ca25f37964"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 FreqTables = "da1fdf0e-e0ff-5433-a45f-9bb5ff651cb1"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
 Latexify = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MatrixLM = "37290134-6146-11e9-0c71-a5c489be1f53"
-MetabolomicsWorkbenchAPI = "19b29032-9db8-4baa-af7b-2b362e62b3d7"
 Missings = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-PrettyTables = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
-RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsModels = "3eaba693-59b7-5ba5-a881-562e759f1c8d"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 
 [compat]
-CSV = "~0.10.9"
-CategoricalArrays = "~0.10.7"
-ColorSchemes = "~3.21.0"
-DataFrames = "~1.5.0"
-DataFramesMeta = "~0.14.0"
-Distributions = "~0.25.87"
-FreqTables = "~0.4.5"
-Images = "~0.25.2"
-Latexify = "~0.15.20"
-MatrixLM = "~0.1.3"
-MetabolomicsWorkbenchAPI = "~0.2.0"
+CSV = "~0.10.12"
+DataFrames = "~1.6.1"
+DataFramesMeta = "~0.14.1"
+Distributions = "~0.25.107"
+FileIO = "~1.16.2"
+FreqTables = "~0.4.6"
+Images = "~0.26.0"
+Latexify = "~0.16.1"
+MatrixLM = "~0.2.1"
 Missings = "~1.1.0"
-Plots = "~1.38.10"
-PlutoUI = "~0.7.50"
-PrettyTables = "~2.2.3"
-RecipesBase = "~1.3.3"
-StatsBase = "~0.33.21"
-StatsModels = "~0.7.1"
-StatsPlots = "~0.15.4"
+Plots = "~1.40.1"
+PlutoUI = "~0.7.55"
+StatsBase = "~0.34.2"
+StatsModels = "~0.7.3"
+StatsPlots = "~0.15.6"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -1364,7 +1001,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.1"
 manifest_format = "2.0"
-project_hash = "55e9c8d331ce0d9b61cc7271542b0a4b3b4c2ee7"
+project_hash = "7834aec4042cf0634b330b64c0bb5e7918511dad"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1385,9 +1022,9 @@ version = "1.3.2"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
-git-tree-sha1 = "cde29ddf7e5726c9fb511f340244ea3481267608"
+git-tree-sha1 = "50c3c56a52972d78e8be9fd135bfb91c9574c140"
 uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
-version = "3.7.2"
+version = "4.1.1"
 weakdeps = ["StaticArrays"]
 
     [deps.Adapt.extensions]
@@ -1421,15 +1058,45 @@ git-tree-sha1 = "5ba6c757e8feccf03a1554dfaf3e26b3cfc7fd5e"
 uuid = "68821587-b530-5797-8361-c406ea357684"
 version = "3.5.1+1"
 
+[[deps.ArrayInterface]]
+deps = ["Adapt", "LinearAlgebra"]
+git-tree-sha1 = "3640d077b6dafd64ceb8fd5c1ec76f7ca53bcf76"
+uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
+version = "7.16.0"
+
+    [deps.ArrayInterface.extensions]
+    ArrayInterfaceBandedMatricesExt = "BandedMatrices"
+    ArrayInterfaceBlockBandedMatricesExt = "BlockBandedMatrices"
+    ArrayInterfaceCUDAExt = "CUDA"
+    ArrayInterfaceCUDSSExt = "CUDSS"
+    ArrayInterfaceChainRulesExt = "ChainRules"
+    ArrayInterfaceGPUArraysCoreExt = "GPUArraysCore"
+    ArrayInterfaceReverseDiffExt = "ReverseDiff"
+    ArrayInterfaceSparseArraysExt = "SparseArrays"
+    ArrayInterfaceStaticArraysCoreExt = "StaticArraysCore"
+    ArrayInterfaceTrackerExt = "Tracker"
+
+    [deps.ArrayInterface.weakdeps]
+    BandedMatrices = "aae01518-5342-5314-be14-df237901396f"
+    BlockBandedMatrices = "ffab5731-97b5-5995-9138-79e8c1846df0"
+    CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+    CUDSS = "45b445bb-4962-46a0-9369-b4df9d0f772e"
+    ChainRules = "082447d4-558c-5d27-93f4-14fc19e9eca2"
+    GPUArraysCore = "46192b85-c4d5-4398-a991-12ede77f4527"
+    ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
+    SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+    StaticArraysCore = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
+    Tracker = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
+
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 version = "1.11.0"
 
 [[deps.AxisAlgorithms]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "WoodburyMatrices"]
-git-tree-sha1 = "66771c8d21c8ff5e3a93379480a2307ac36863f7"
+git-tree-sha1 = "01b8ccb13d68535d73d2b0c23e39bd23155fb712"
 uuid = "13072b0f-2c55-5437-9ae7-d433b7a33950"
-version = "1.0.1"
+version = "1.1.0"
 
 [[deps.AxisArrays]]
 deps = ["Dates", "IntervalSets", "IterTools", "RangeArrays"]
@@ -1446,6 +1113,12 @@ git-tree-sha1 = "0691e34b3bb8be9307330f88d1a3c3f25466c24d"
 uuid = "d1d4a3ce-64b1-5f1a-9ba4-7e7e69966f35"
 version = "0.1.9"
 
+[[deps.BitTwiddlingConvenienceFunctions]]
+deps = ["Static"]
+git-tree-sha1 = "f21cfd4950cb9f0587d5067e69405ad2acd27b87"
+uuid = "62783981-4cbd-42fc-bca8-16325de8dc4b"
+version = "0.1.6"
+
 [[deps.Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "8873e196c2eb87962a2048b3b8e08946535864a1"
@@ -1456,6 +1129,12 @@ version = "1.0.8+2"
 git-tree-sha1 = "389ad5c84de1ae7cf0e28e381131c98ea87d54fc"
 uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 version = "0.5.0"
+
+[[deps.CPUSummary]]
+deps = ["CpuId", "IfElse", "PrecompileTools", "Static"]
+git-tree-sha1 = "5a97e67919535d6841172016c9530fd69494e5ec"
+uuid = "2a0fbf3d-bb9c-48f3-b0a9-814d99fd7ab9"
+version = "0.2.6"
 
 [[deps.CSV]]
 deps = ["CodecZlib", "Dates", "FilePathsBase", "InlineStrings", "Mmap", "Parsers", "PooledArrays", "PrecompileTools", "SentinelArrays", "Tables", "Unicode", "WeakRefStrings", "WorkerUtilities"]
@@ -1480,13 +1159,18 @@ deps = ["DataAPI", "Future", "Missings", "Printf", "Requires", "Statistics", "Un
 git-tree-sha1 = "1568b28f91293458345dabba6a5ea3f183250a61"
 uuid = "324d7699-5711-5eae-9e2f-1d82baa6b597"
 version = "0.10.8"
-weakdeps = ["JSON", "RecipesBase", "SentinelArrays", "StructTypes"]
 
     [deps.CategoricalArrays.extensions]
     CategoricalArraysJSONExt = "JSON"
     CategoricalArraysRecipesBaseExt = "RecipesBase"
     CategoricalArraysSentinelArraysExt = "SentinelArrays"
     CategoricalArraysStructTypesExt = "StructTypes"
+
+    [deps.CategoricalArrays.weakdeps]
+    JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+    RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+    SentinelArrays = "91c51154-3ec4-41a3-a24f-3f23e20d615c"
+    StructTypes = "856f2bd8-1eba-4b0a-8007-ebc267875bd4"
 
 [[deps.Chain]]
 git-tree-sha1 = "8c4920235f6c561e401dfe569beb8b924adad003"
@@ -1503,6 +1187,12 @@ weakdeps = ["SparseArrays"]
     [deps.ChainRulesCore.extensions]
     ChainRulesCoreSparseArraysExt = "SparseArrays"
 
+[[deps.CloseOpenIntervals]]
+deps = ["Static", "StaticArrayInterface"]
+git-tree-sha1 = "05ba0d07cd4fd8b7a39541e31a7b0254704ea581"
+uuid = "fb6a15b2-703c-40df-9091-08a04967cfa9"
+version = "0.1.13"
+
 [[deps.Clustering]]
 deps = ["Distances", "LinearAlgebra", "NearestNeighbors", "Printf", "Random", "SparseArrays", "Statistics", "StatsBase"]
 git-tree-sha1 = "9ebb045901e9bbf58767a9f34ff89831ed711aae"
@@ -1517,9 +1207,9 @@ version = "0.7.6"
 
 [[deps.ColorSchemes]]
 deps = ["ColorTypes", "ColorVectorSpace", "Colors", "FixedPointNumbers", "PrecompileTools", "Random"]
-git-tree-sha1 = "be6ab11021cd29f0344d5c4357b163af05a48cba"
+git-tree-sha1 = "b5278586822443594ff615963b0c09755771b3e0"
 uuid = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
-version = "3.21.0"
+version = "3.26.0"
 
 [[deps.ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
@@ -1543,6 +1233,11 @@ version = "0.12.11"
 git-tree-sha1 = "08c8b6831dc00bfea825826be0bc8336fc369860"
 uuid = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 version = "1.0.2"
+
+[[deps.CommonWorldInvalidations]]
+git-tree-sha1 = "ae52d1c52048455e85a387fbee9be553ec2b68d0"
+uuid = "f70d9fcc-98c5-4d4a-abd7-e4cdeebd8ca8"
+version = "1.0.0"
 
 [[deps.Compat]]
 deps = ["TOML", "UUIDs"]
@@ -1570,6 +1265,17 @@ git-tree-sha1 = "ea32b83ca4fefa1768dc84e504cc0a94fb1ab8d1"
 uuid = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
 version = "2.4.2"
 
+[[deps.ConstructionBase]]
+git-tree-sha1 = "76219f1ed5771adbb096743bff43fb5fdd4c1157"
+uuid = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
+version = "1.5.8"
+weakdeps = ["IntervalSets", "LinearAlgebra", "StaticArrays"]
+
+    [deps.ConstructionBase.extensions]
+    ConstructionBaseIntervalSetsExt = "IntervalSets"
+    ConstructionBaseLinearAlgebraExt = "LinearAlgebra"
+    ConstructionBaseStaticArraysExt = "StaticArrays"
+
 [[deps.Contour]]
 git-tree-sha1 = "439e35b0b36e2e5881738abc8857bd92ad6ff9a8"
 uuid = "d38c429a-6771-53c6-b99e-75d170b6e991"
@@ -1580,6 +1286,12 @@ deps = ["LinearAlgebra", "StaticArrays"]
 git-tree-sha1 = "f9d7112bfff8a19a3a4ea4e03a8e6a91fe8456bf"
 uuid = "150eb455-5306-5404-9cee-2592286d6298"
 version = "0.6.3"
+
+[[deps.CpuId]]
+deps = ["Markdown"]
+git-tree-sha1 = "fcbb72b032692610bfbdb15018ac16a36cf2e406"
+uuid = "adafc99b-e345-5852-983c-f28acb93d879"
+version = "0.3.1"
 
 [[deps.Crayons]]
 git-tree-sha1 = "249fe38abf76d48563e2f4556bebd215aa317e15"
@@ -1597,10 +1309,10 @@ uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
 version = "1.16.0"
 
 [[deps.DataFrames]]
-deps = ["Compat", "DataAPI", "Future", "InlineStrings", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrettyTables", "Printf", "REPL", "Random", "Reexport", "SentinelArrays", "SnoopPrecompile", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
-git-tree-sha1 = "aa51303df86f8626a962fccb878430cdb0a97eee"
+deps = ["Compat", "DataAPI", "DataStructures", "Future", "InlineStrings", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrecompileTools", "PrettyTables", "Printf", "REPL", "Random", "Reexport", "SentinelArrays", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
+git-tree-sha1 = "04c738083f29f86e62c8afc341f0967d8717bdb8"
 uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-version = "1.5.0"
+version = "1.6.1"
 
 [[deps.DataFramesMeta]]
 deps = ["Chain", "DataFrames", "MacroTools", "OrderedCollections", "Reexport"]
@@ -1654,9 +1366,9 @@ version = "1.11.0"
 
 [[deps.Distributions]]
 deps = ["AliasTables", "FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SpecialFunctions", "Statistics", "StatsAPI", "StatsBase", "StatsFuns"]
-git-tree-sha1 = "3101c32aab536e7a27b1763c0797dba151b899ad"
+git-tree-sha1 = "d7477ecdafb813ddee2ae727afa94e9dcb5f3fb0"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.25.113"
+version = "0.25.112"
 
     [deps.Distributions.extensions]
     DistributionsChainRulesCoreExt = "ChainRulesCore"
@@ -1687,15 +1399,15 @@ version = "0.0.20230411+0"
 
 [[deps.ExceptionUnwrapping]]
 deps = ["Test"]
-git-tree-sha1 = "d36f682e590a83d63d1c7dbd287573764682d12a"
+git-tree-sha1 = "dcb08a0d93ec0b1cdc4af184b26b591e9695423a"
 uuid = "460bff9d-24e4-43bc-9d9f-a8973cb893f4"
-version = "0.1.11"
+version = "0.1.10"
 
 [[deps.Expat_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "cc5231d52eb1771251fbd37171dbc408bcc8a1b6"
+git-tree-sha1 = "1c6317308b9dc757616f0b5cb379db10494443a7"
 uuid = "2e619515-83b5-522b-bb60-26c02a35a201"
-version = "2.6.4+0"
+version = "2.6.2+0"
 
 [[deps.FFMPEG]]
 deps = ["FFMPEG_jll"]
@@ -1704,10 +1416,10 @@ uuid = "c87230d0-a227-11e9-1b43-d7ebe4e7570a"
 version = "0.4.2"
 
 [[deps.FFMPEG_jll]]
-deps = ["Artifacts", "Bzip2_jll", "FreeType2_jll", "FriBidi_jll", "JLLWrappers", "LAME_jll", "Libdl", "Ogg_jll", "OpenSSL_jll", "Opus_jll", "PCRE2_jll", "Pkg", "Zlib_jll", "libaom_jll", "libass_jll", "libfdk_aac_jll", "libvorbis_jll", "x264_jll", "x265_jll"]
-git-tree-sha1 = "74faea50c1d007c85837327f6775bea60b5492dd"
+deps = ["Artifacts", "Bzip2_jll", "FreeType2_jll", "FriBidi_jll", "JLLWrappers", "LAME_jll", "Libdl", "Ogg_jll", "OpenSSL_jll", "Opus_jll", "PCRE2_jll", "Zlib_jll", "libaom_jll", "libass_jll", "libfdk_aac_jll", "libvorbis_jll", "x264_jll", "x265_jll"]
+git-tree-sha1 = "466d45dc38e15794ec7d5d63ec03d776a9aff36e"
 uuid = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
-version = "4.4.2+2"
+version = "4.4.4+1"
 
 [[deps.FFTViews]]
 deps = ["CustomUnitRanges", "FFTW"]
@@ -1729,13 +1441,9 @@ version = "3.3.10+1"
 
 [[deps.FileIO]]
 deps = ["Pkg", "Requires", "UUIDs"]
-git-tree-sha1 = "2dd20384bf8c6d411b5c7370865b1e9b26cb2ea3"
+git-tree-sha1 = "62ca0547a14c57e98154423419d8a342dca75ca9"
 uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
-version = "1.16.6"
-weakdeps = ["HTTP"]
-
-    [deps.FileIO.extensions]
-    HTTPExt = "HTTP"
+version = "1.16.4"
 
 [[deps.FilePathsBase]]
 deps = ["Compat", "Dates"]
@@ -1776,11 +1484,10 @@ git-tree-sha1 = "db16beca600632c95fc8aca29890d83788dd8b23"
 uuid = "a3f928ae-7b40-5064-980b-68af3947d34b"
 version = "2.13.96+0"
 
-[[deps.Formatting]]
-deps = ["Logging", "Printf"]
-git-tree-sha1 = "fb409abab2caf118986fc597ba84b50cbaf00b87"
-uuid = "59287772-0a20-5a39-b81b-1366585eb4c0"
-version = "0.4.3"
+[[deps.Format]]
+git-tree-sha1 = "9c68794ef81b08086aeb32eeaf33531668d5f5fc"
+uuid = "1fa38f19-a742-5d3f-a2b9-30dd87b9d5f8"
+version = "1.3.7"
 
 [[deps.FreeType2_jll]]
 deps = ["Artifacts", "Bzip2_jll", "JLLWrappers", "Libdl", "Zlib_jll"]
@@ -1811,23 +1518,17 @@ git-tree-sha1 = "532f9126ad901533af1d4f5c198867227a7bb077"
 uuid = "0656b61e-2033-5cc2-a64a-77c0f6c09b89"
 version = "3.4.0+1"
 
-[[deps.GLM]]
-deps = ["Distributions", "LinearAlgebra", "Printf", "Reexport", "SparseArrays", "SpecialFunctions", "Statistics", "StatsAPI", "StatsBase", "StatsFuns", "StatsModels"]
-git-tree-sha1 = "273bd1cd30768a2fddfa3fd63bbc746ed7249e5f"
-uuid = "38e38edf-8417-5370-95a0-9cbb8c7f171a"
-version = "1.9.0"
-
 [[deps.GR]]
-deps = ["Artifacts", "Base64", "DelimitedFiles", "Downloads", "GR_jll", "HTTP", "JSON", "Libdl", "LinearAlgebra", "Pkg", "Preferences", "Printf", "Random", "Serialization", "Sockets", "TOML", "Tar", "Test", "UUIDs", "p7zip_jll"]
-git-tree-sha1 = "8e2d86e06ceb4580110d9e716be26658effc5bfd"
+deps = ["Artifacts", "Base64", "DelimitedFiles", "Downloads", "GR_jll", "HTTP", "JSON", "Libdl", "LinearAlgebra", "Preferences", "Printf", "Qt6Wayland_jll", "Random", "Serialization", "Sockets", "TOML", "Tar", "Test", "p7zip_jll"]
+git-tree-sha1 = "ee28ddcd5517d54e417182fec3886e7412d3926f"
 uuid = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
-version = "0.72.8"
+version = "0.73.8"
 
 [[deps.GR_jll]]
-deps = ["Artifacts", "Bzip2_jll", "Cairo_jll", "FFMPEG_jll", "Fontconfig_jll", "GLFW_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pixman_jll", "Qt5Base_jll", "Zlib_jll", "libpng_jll"]
-git-tree-sha1 = "da121cbdc95b065da07fbb93638367737969693f"
+deps = ["Artifacts", "Bzip2_jll", "Cairo_jll", "FFMPEG_jll", "Fontconfig_jll", "FreeType2_jll", "GLFW_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pixman_jll", "Qt6Base_jll", "Zlib_jll", "libpng_jll"]
+git-tree-sha1 = "f31929b9e67066bee48eec8b03c0df47d31a74b3"
 uuid = "d2c73de3-f751-5644-a686-071e5b155ba9"
-version = "0.72.8+0"
+version = "0.73.8+0"
 
 [[deps.Gettext_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "XML2_jll"]
@@ -1849,9 +1550,9 @@ version = "2.80.5+0"
 
 [[deps.Graphics]]
 deps = ["Colors", "LinearAlgebra", "NaNMath"]
-git-tree-sha1 = "a641238db938fff9b2f60d08ed9030387daf428c"
+git-tree-sha1 = "d61890399bc535850c4bf08e4e0d3a7ad0f21cbd"
 uuid = "a2bd30eb-e257-5431-a919-1863eab51364"
-version = "1.1.3"
+version = "1.1.2"
 
 [[deps.Graphite2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1872,9 +1573,9 @@ version = "1.0.2"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "ExceptionUnwrapping", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "1336e07ba2eb75614c99496501a8f4b233e9fafe"
+git-tree-sha1 = "bc3f416a965ae61968c20d0ad867556367f2817d"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.10.10"
+version = "1.10.9"
 
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll"]
@@ -1882,11 +1583,23 @@ git-tree-sha1 = "401e4f3f30f43af2c8478fc008da50096ea5240f"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
 version = "8.3.1+0"
 
+[[deps.HistogramThresholding]]
+deps = ["ImageBase", "LinearAlgebra", "MappedArrays"]
+git-tree-sha1 = "7194dfbb2f8d945abdaf68fa9480a965d6661e69"
+uuid = "2c695a8d-9458-5d45-9878-1b8a99cf7853"
+version = "0.3.1"
+
+[[deps.HostCPUFeatures]]
+deps = ["BitTwiddlingConvenienceFunctions", "IfElse", "Libdl", "Static"]
+git-tree-sha1 = "8e070b599339d622e9a081d17230d74a5c473293"
+uuid = "3e5b6fbb-0976-4d2c-9146-d79de83f2fb0"
+version = "0.1.17"
+
 [[deps.HypergeometricFunctions]]
 deps = ["LinearAlgebra", "OpenLibm_jll", "SpecialFunctions"]
-git-tree-sha1 = "b1c2585431c382e3fe5805874bda6aea90a95de9"
+git-tree-sha1 = "7c4195be1649ae622304031ed46a2f4df989f1eb"
 uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
-version = "0.3.25"
+version = "0.3.24"
 
 [[deps.Hyperscript]]
 deps = ["Test"]
@@ -1906,6 +1619,11 @@ git-tree-sha1 = "b6d6bfdd7ce25b0f9b2f6b3dd56b2673a66c8770"
 uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
 version = "0.2.5"
 
+[[deps.IfElse]]
+git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
+uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
+version = "0.1.1"
+
 [[deps.ImageAxes]]
 deps = ["AxisArrays", "ImageBase", "ImageCore", "Reexport", "SimpleTraits"]
 git-tree-sha1 = "2e4520d67b0cef90865b3ef727594d2a58e0e1f8"
@@ -1918,6 +1636,12 @@ git-tree-sha1 = "b51bb8cae22c66d0f6357e3bcb6363145ef20835"
 uuid = "c817782e-172a-44cc-b673-b171935fbb9e"
 version = "0.1.5"
 
+[[deps.ImageBinarization]]
+deps = ["HistogramThresholding", "ImageCore", "LinearAlgebra", "Polynomials", "Reexport", "Statistics"]
+git-tree-sha1 = "33485b4e40d1df46c806498c73ea32dc17475c59"
+uuid = "cbc4b850-ae4b-5111-9e64-df94c024a13d"
+version = "0.3.1"
+
 [[deps.ImageContrastAdjustment]]
 deps = ["ImageBase", "ImageCore", "ImageTransformations", "Parameters"]
 git-tree-sha1 = "eb3d4365a10e3f3ecb3b115e9d12db131d28a386"
@@ -1929,6 +1653,12 @@ deps = ["AbstractFFTs", "ColorVectorSpace", "Colors", "FixedPointNumbers", "Grap
 git-tree-sha1 = "acf614720ef026d38400b3817614c45882d75500"
 uuid = "a09fc81d-aa75-5fe9-8630-4744c3626534"
 version = "0.9.4"
+
+[[deps.ImageCorners]]
+deps = ["ImageCore", "ImageFiltering", "PrecompileTools", "StaticArrays", "StatsBase"]
+git-tree-sha1 = "24c52de051293745a9bad7d73497708954562b79"
+uuid = "89d5987c-236e-4e32-acd0-25bd6bd87b70"
+version = "0.1.3"
 
 [[deps.ImageDistances]]
 deps = ["Distances", "ImageCore", "ImageMorphology", "LinearAlgebra", "Statistics"]
@@ -1949,16 +1679,16 @@ uuid = "82e4d734-157c-48bb-816b-45c225c6df19"
 version = "0.6.8"
 
 [[deps.ImageMagick]]
-deps = ["FileIO", "ImageCore", "ImageMagick_jll", "InteractiveUtils"]
-git-tree-sha1 = "c5c5478ae8d944c63d6de961b19e6d3324812c35"
+deps = ["FileIO", "ImageCore", "ImageMagick_jll", "InteractiveUtils", "Libdl", "Pkg", "Random"]
+git-tree-sha1 = "5bc1cb62e0c5f1005868358db0692c994c3a13c6"
 uuid = "6218d12a-5da1-5696-b52f-db25d2ecc6d1"
-version = "1.4.0"
+version = "1.2.1"
 
 [[deps.ImageMagick_jll]]
 deps = ["Artifacts", "Ghostscript_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "OpenJpeg_jll", "Zlib_jll", "libpng_jll"]
-git-tree-sha1 = "fa01c98985be12e5d75301c4527fff2c46fa3e0e"
+git-tree-sha1 = "d65554bad8b16d9562050c67e7223abf91eaba2f"
 uuid = "c73af94c-d91f-53ed-93a7-00f77d67a9d7"
-version = "7.1.1+1"
+version = "6.9.13+0"
 
 [[deps.ImageMetadata]]
 deps = ["AxisArrays", "ImageAxes", "ImageBase", "ImageCore"]
@@ -1967,10 +1697,10 @@ uuid = "bc367c6b-8a6b-528e-b4bd-a4b897500b49"
 version = "0.9.9"
 
 [[deps.ImageMorphology]]
-deps = ["ImageCore", "LinearAlgebra", "Requires", "TiledIteration"]
-git-tree-sha1 = "e7c68ab3df4a75511ba33fc5d8d9098007b579a8"
+deps = ["DataStructures", "ImageCore", "LinearAlgebra", "LoopVectorization", "OffsetArrays", "Requires", "TiledIteration"]
+git-tree-sha1 = "6f0a801136cb9c229aebea0df296cdcd471dbcd1"
 uuid = "787d08f9-d448-5407-9aad-5290dd7ab264"
-version = "0.3.2"
+version = "0.4.5"
 
 [[deps.ImageQualityIndexes]]
 deps = ["ImageContrastAdjustment", "ImageCore", "ImageDistances", "ImageFiltering", "LazyModules", "OffsetArrays", "PrecompileTools", "Statistics"]
@@ -1991,16 +1721,16 @@ uuid = "4e3cecfd-b093-5904-9786-8bbb286a6a31"
 version = "0.3.8"
 
 [[deps.ImageTransformations]]
-deps = ["AxisAlgorithms", "ColorVectorSpace", "CoordinateTransformations", "ImageBase", "ImageCore", "Interpolations", "OffsetArrays", "Rotations", "StaticArrays"]
-git-tree-sha1 = "8717482f4a2108c9358e5c3ca903d3a6113badc9"
+deps = ["AxisAlgorithms", "CoordinateTransformations", "ImageBase", "ImageCore", "Interpolations", "OffsetArrays", "Rotations", "StaticArrays"]
+git-tree-sha1 = "e0884bdf01bbbb111aea77c348368a86fb4b5ab6"
 uuid = "02fcd773-0e25-5acc-982a-7f6622650795"
-version = "0.9.5"
+version = "0.10.1"
 
 [[deps.Images]]
-deps = ["Base64", "FileIO", "Graphics", "ImageAxes", "ImageBase", "ImageContrastAdjustment", "ImageCore", "ImageDistances", "ImageFiltering", "ImageIO", "ImageMagick", "ImageMetadata", "ImageMorphology", "ImageQualityIndexes", "ImageSegmentation", "ImageShow", "ImageTransformations", "IndirectArrays", "IntegralArrays", "Random", "Reexport", "SparseArrays", "StaticArrays", "Statistics", "StatsBase", "TiledIteration"]
-git-tree-sha1 = "5fa9f92e1e2918d9d1243b1131abe623cdf98be7"
+deps = ["Base64", "FileIO", "Graphics", "ImageAxes", "ImageBase", "ImageBinarization", "ImageContrastAdjustment", "ImageCore", "ImageCorners", "ImageDistances", "ImageFiltering", "ImageIO", "ImageMagick", "ImageMetadata", "ImageMorphology", "ImageQualityIndexes", "ImageSegmentation", "ImageShow", "ImageTransformations", "IndirectArrays", "IntegralArrays", "Random", "Reexport", "SparseArrays", "StaticArrays", "Statistics", "StatsBase", "TiledIteration"]
+git-tree-sha1 = "12fdd617c7fe25dc4a6cc804d657cc4b2230302b"
 uuid = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
-version = "0.25.3"
+version = "0.26.1"
 
 [[deps.Imath_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2033,9 +1763,9 @@ version = "1.4.2"
 
 [[deps.IntegralArrays]]
 deps = ["ColorTypes", "FixedPointNumbers", "IntervalSets"]
-git-tree-sha1 = "b842cbff3f44804a84fda409745cc8f04c029a20"
+git-tree-sha1 = "be8e690c3973443bec584db3346ddc904d4884eb"
 uuid = "1d092043-8f09-5a30-832f-7509e371ab51"
-version = "0.1.6"
+version = "0.1.5"
 
 [[deps.IntelOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl"]
@@ -2050,9 +1780,13 @@ version = "1.11.0"
 
 [[deps.Interpolations]]
 deps = ["Adapt", "AxisAlgorithms", "ChainRulesCore", "LinearAlgebra", "OffsetArrays", "Random", "Ratios", "Requires", "SharedArrays", "SparseArrays", "StaticArrays", "WoodburyMatrices"]
-git-tree-sha1 = "721ec2cf720536ad005cb38f50dbba7b02419a15"
+git-tree-sha1 = "88a101217d7cb38a7b481ccd50d21876e1d1b0e0"
 uuid = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
-version = "0.14.7"
+version = "0.15.1"
+weakdeps = ["Unitful"]
+
+    [deps.Interpolations.extensions]
+    InterpolationsUnitfulExt = "Unitful"
 
 [[deps.IntervalSets]]
 git-tree-sha1 = "dba9ddf07f77f60450fe5d2e2beb9854d9a49bd0"
@@ -2109,18 +1843,6 @@ git-tree-sha1 = "31e996f0a15c7b280ba9f76636b3ff9e2ae58c9a"
 uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 version = "0.21.4"
 
-[[deps.JSON3]]
-deps = ["Dates", "Mmap", "Parsers", "PrecompileTools", "StructTypes", "UUIDs"]
-git-tree-sha1 = "1d322381ef7b087548321d3f878cb4c9bd8f8f9b"
-uuid = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
-version = "1.14.1"
-
-    [deps.JSON3.extensions]
-    JSON3ArrowExt = ["ArrowTypes"]
-
-    [deps.JSON3.weakdeps]
-    ArrowTypes = "31f734f8-188a-4ce0-8406-c8a06bd891cd"
-
 [[deps.JpegTurbo]]
 deps = ["CEnum", "FileIO", "ImageCore", "JpegTurbo_jll", "TOML"]
 git-tree-sha1 = "fa6d0bcff8583bac20f1ffa708c3913ca605c611"
@@ -2146,10 +1868,10 @@ uuid = "c1c5ebd0-6772-5130-a774-d5fcae4a789d"
 version = "3.100.2+0"
 
 [[deps.LERC_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "bf36f528eec6634efc60d7ec062008f171071434"
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "36bdbc52f13a7d1dcb0f3cd694e01677a515655b"
 uuid = "88015f11-f218-50d7-93a8-a6af411a945d"
-version = "3.0.0+1"
+version = "4.0.0+0"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2169,22 +1891,26 @@ uuid = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 version = "1.4.0"
 
 [[deps.Latexify]]
-deps = ["Formatting", "InteractiveUtils", "LaTeXStrings", "MacroTools", "Markdown", "OrderedCollections", "Printf", "Requires"]
-git-tree-sha1 = "8c57307b5d9bb3be1ff2da469063628631d4d51e"
+deps = ["Format", "InteractiveUtils", "LaTeXStrings", "MacroTools", "Markdown", "OrderedCollections", "Requires"]
+git-tree-sha1 = "ce5f5621cac23a86011836badfedf664a612cee4"
 uuid = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
-version = "0.15.21"
+version = "0.16.5"
 
     [deps.Latexify.extensions]
     DataFramesExt = "DataFrames"
-    DiffEqBiologicalExt = "DiffEqBiological"
-    ParameterizedFunctionsExt = "DiffEqBase"
+    SparseArraysExt = "SparseArrays"
     SymEngineExt = "SymEngine"
 
     [deps.Latexify.weakdeps]
     DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-    DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
-    DiffEqBiological = "eb300fae-53e8-50a0-950c-e21f52c2b7e0"
+    SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
     SymEngine = "123dc426-2d89-5057-bbad-38513e3affd8"
+
+[[deps.LayoutPointers]]
+deps = ["ArrayInterface", "LinearAlgebra", "ManualMemory", "SIMDTypes", "Static", "StaticArrayInterface"]
+git-tree-sha1 = "a9eaadb366f5493a5654e843864c13d8b107548c"
+uuid = "10f19ff3-798f-405d-979b-55457f8fc047"
+version = "0.1.17"
 
 [[deps.LazyArtifacts]]
 deps = ["Artifacts", "Pkg"]
@@ -2262,10 +1988,10 @@ uuid = "4b2f31a3-9ecc-558c-b454-b3730dcb73e9"
 version = "2.40.1+0"
 
 [[deps.Libtiff_jll]]
-deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "LERC_jll", "Libdl", "Pkg", "Zlib_jll", "Zstd_jll"]
-git-tree-sha1 = "3eb79b0ca5764d4799c06699573fd8f533259713"
+deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "LERC_jll", "Libdl", "XZ_jll", "Zlib_jll", "Zstd_jll"]
+git-tree-sha1 = "b404131d06f7886402758c9ce2214b636eb4d54a"
 uuid = "89763e89-9b03-5906-acba-b20f662cd828"
-version = "4.4.0+0"
+version = "4.7.0+0"
 
 [[deps.Libuuid_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2279,10 +2005,10 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 version = "1.11.0"
 
 [[deps.LittleCMS_jll]]
-deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pkg"]
-git-tree-sha1 = "110897e7db2d6836be22c18bffd9422218ee6284"
+deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll"]
+git-tree-sha1 = "fa7fd067dca76cadd880f1ca937b4f387975a9f5"
 uuid = "d3a379c0-f9a3-5b72-a4c0-6bf4d2e8af0f"
-version = "2.12.0+0"
+version = "2.16.0+0"
 
 [[deps.LogExpFunctions]]
 deps = ["DocStringExtensions", "IrrationalConstants", "LinearAlgebra"]
@@ -2310,6 +2036,21 @@ git-tree-sha1 = "f02b56007b064fbfddb4c9cd60161b6dd0f40df3"
 uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
 version = "1.1.0"
 
+[[deps.LoopVectorization]]
+deps = ["ArrayInterface", "CPUSummary", "CloseOpenIntervals", "DocStringExtensions", "HostCPUFeatures", "IfElse", "LayoutPointers", "LinearAlgebra", "OffsetArrays", "PolyesterWeave", "PrecompileTools", "SIMDTypes", "SLEEFPirates", "Static", "StaticArrayInterface", "ThreadingUtilities", "UnPack", "VectorizationBase"]
+git-tree-sha1 = "8084c25a250e00ae427a379a5b607e7aed96a2dd"
+uuid = "bdcacae8-1622-11e9-2a5c-532679323890"
+version = "0.12.171"
+
+    [deps.LoopVectorization.extensions]
+    ForwardDiffExt = ["ChainRulesCore", "ForwardDiff"]
+    SpecialFunctionsExt = "SpecialFunctions"
+
+    [deps.LoopVectorization.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+    SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
+
 [[deps.MIMEs]]
 git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
 uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
@@ -2327,6 +2068,11 @@ git-tree-sha1 = "2fa9ee3e63fd3a4f7a9a4f4744a52f4856de82df"
 uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
 version = "0.5.13"
 
+[[deps.ManualMemory]]
+git-tree-sha1 = "bcaef4fc7a0cfe2cba636d84cda54b5e4e4ca3cd"
+uuid = "d125e4d3-2237-4719-b19c-fa641b8a4667"
+version = "0.1.8"
+
 [[deps.MappedArrays]]
 git-tree-sha1 = "2dab0221fe2b0f2cb6754eaa743cc266339f527e"
 uuid = "dbb5928d-eab1-5f90-85c2-b9b0edb7c900"
@@ -2338,10 +2084,10 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 version = "1.11.0"
 
 [[deps.MatrixLM]]
-deps = ["DataFrames", "Distributed", "GLM", "LinearAlgebra", "Random", "SharedArrays", "Statistics", "Test"]
-git-tree-sha1 = "742d34bc491fa02269dd019a0fed8f7e40e549c0"
+deps = ["DataFrames", "Distributed", "LinearAlgebra", "Random", "SharedArrays", "Statistics", "StatsModels"]
+git-tree-sha1 = "9fedde90823372aaaf6cf0f14b3dc5ca95ce28c0"
 uuid = "37290134-6146-11e9-0c71-a5c489be1f53"
-version = "0.1.3"
+version = "0.2.1"
 
 [[deps.MbedTLS]]
 deps = ["Dates", "MbedTLS_jll", "MozillaCACerts_jll", "NetworkOptions", "Random", "Sockets"]
@@ -2364,12 +2110,6 @@ deps = ["Graphs", "JLD2", "Random"]
 git-tree-sha1 = "1130dbe1d5276cb656f6e1094ce97466ed700e5a"
 uuid = "626554b9-1ddb-594c-aa3c-2596fe9399a5"
 version = "0.7.2"
-
-[[deps.MetabolomicsWorkbenchAPI]]
-deps = ["CSV", "DataFrames", "HTTP", "JSON3"]
-git-tree-sha1 = "16b38874ec66128c3de5a9d08c1fa6157fadb390"
-uuid = "19b29032-9db8-4baa-af7b-2b362e62b3d7"
-version = "0.2.0"
 
 [[deps.Missings]]
 deps = ["DataAPI"]
@@ -2411,9 +2151,9 @@ version = "0.10.3"
 
 [[deps.NearestNeighbors]]
 deps = ["Distances", "StaticArrays"]
-git-tree-sha1 = "8a3271d8309285f4db73b4f662b1b290c715e85e"
+git-tree-sha1 = "3cebfc94a0754cc329ebc3bab1e6c89621e791ad"
 uuid = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
-version = "0.4.21"
+version = "0.4.20"
 
 [[deps.Netpbm]]
 deps = ["FileIO", "ImageCore", "ImageMetadata"]
@@ -2452,9 +2192,9 @@ version = "0.3.27+1"
 
 [[deps.OpenEXR]]
 deps = ["Colors", "FileIO", "OpenEXR_jll"]
-git-tree-sha1 = "97db9e07fe2091882c765380ef58ec553074e9c7"
+git-tree-sha1 = "327f53360fdb54df7ecd01e96ef1983536d1e633"
 uuid = "52e1d378-f018-4a11-a4be-720524705ac7"
-version = "0.3.3"
+version = "0.3.2"
 
 [[deps.OpenEXR_jll]]
 deps = ["Artifacts", "Imath_jll", "JLLWrappers", "Libdl", "Zlib_jll"]
@@ -2463,10 +2203,10 @@ uuid = "18a262bb-aa17-5467-a713-aee519bc75cb"
 version = "3.2.4+0"
 
 [[deps.OpenJpeg_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Libtiff_jll", "LittleCMS_jll", "Pkg", "libpng_jll"]
-git-tree-sha1 = "76374b6e7f632c130e78100b166e5a48464256f8"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Libtiff_jll", "LittleCMS_jll", "libpng_jll"]
+git-tree-sha1 = "f4cb457ffac5f5cf695699f82c537073958a6a6c"
 uuid = "643b3616-a352-519d-856d-80112ee9badc"
-version = "2.4.0+0"
+version = "2.5.2+0"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -2481,9 +2221,9 @@ version = "1.4.3"
 
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "ad31332567b189f508a3ea8957a2640b1147ab00"
+git-tree-sha1 = "7493f61f55a6cce7325f197443aa80d32554ba10"
 uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
-version = "1.1.23+1"
+version = "3.0.15+1"
 
 [[deps.OpenSpecFun_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
@@ -2577,15 +2317,15 @@ version = "3.3.0"
 
 [[deps.PlotUtils]]
 deps = ["ColorSchemes", "Colors", "Dates", "PrecompileTools", "Printf", "Random", "Reexport", "StableRNGs", "Statistics"]
-git-tree-sha1 = "3ca9a356cd2e113c420f2c13bea19f8d3fb1cb18"
+git-tree-sha1 = "650a022b2ce86c7dcfbdecf00f78afeeb20e5655"
 uuid = "995b91a9-d308-5afd-9ec6-746e21dbc043"
-version = "1.4.3"
+version = "1.4.2"
 
 [[deps.Plots]]
-deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "JLFzf", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "PrecompileTools", "Preferences", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "RelocatableFolders", "Requires", "Scratch", "Showoff", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun", "UnitfulLatexify", "Unzip"]
-git-tree-sha1 = "9f8675a55b37a70aa23177ec110f6e3f4dd68466"
+deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "JLFzf", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "PrecompileTools", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "RelocatableFolders", "Requires", "Scratch", "Showoff", "SparseArrays", "Statistics", "StatsBase", "TOML", "UUIDs", "UnicodeFun", "UnitfulLatexify", "Unzip"]
+git-tree-sha1 = "45470145863035bb124ca51b320ed35d071cc6c2"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-version = "1.38.17"
+version = "1.40.8"
 
     [deps.Plots.extensions]
     FileIOExt = "FileIO"
@@ -2607,6 +2347,30 @@ git-tree-sha1 = "eba4810d5e6a01f612b948c9fa94f905b49087b0"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 version = "0.7.60"
 
+[[deps.PolyesterWeave]]
+deps = ["BitTwiddlingConvenienceFunctions", "CPUSummary", "IfElse", "Static", "ThreadingUtilities"]
+git-tree-sha1 = "645bed98cd47f72f67316fd42fc47dee771aefcd"
+uuid = "1d0040c9-8b98-4ee7-8388-3f51789ca0ad"
+version = "0.2.2"
+
+[[deps.Polynomials]]
+deps = ["LinearAlgebra", "RecipesBase", "Requires", "Setfield", "SparseArrays"]
+git-tree-sha1 = "1a9cfb2dc2c2f1bd63f1906d72af39a79b49b736"
+uuid = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
+version = "4.0.11"
+
+    [deps.Polynomials.extensions]
+    PolynomialsChainRulesCoreExt = "ChainRulesCore"
+    PolynomialsFFTWExt = "FFTW"
+    PolynomialsMakieCoreExt = "MakieCore"
+    PolynomialsMutableArithmeticsExt = "MutableArithmetics"
+
+    [deps.Polynomials.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+    MakieCore = "20f20a25-4f0e-4fdf-b5d1-57303727442b"
+    MutableArithmetics = "d8a4904e-b15c-11e9-3269-09a3773c0cb0"
+
 [[deps.PooledArrays]]
 deps = ["DataAPI", "Future"]
 git-tree-sha1 = "36d8b4b899628fb92c2749eb488d884a926614d3"
@@ -2626,10 +2390,10 @@ uuid = "21216c6a-2e73-6563-6e65-726566657250"
 version = "1.4.3"
 
 [[deps.PrettyTables]]
-deps = ["Crayons", "LaTeXStrings", "Markdown", "Printf", "Reexport", "StringManipulation", "Tables"]
-git-tree-sha1 = "6842ce83a836fbbc0cfeca0b5a4de1a4dcbdb8d1"
+deps = ["Crayons", "LaTeXStrings", "Markdown", "PrecompileTools", "Printf", "Reexport", "StringManipulation", "Tables"]
+git-tree-sha1 = "1101cd475833706e4d0e7b122218257178f48f34"
 uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
-version = "2.2.8"
+version = "2.4.0"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -2649,15 +2413,33 @@ version = "1.2.1"
 
 [[deps.QOI]]
 deps = ["ColorTypes", "FileIO", "FixedPointNumbers"]
-git-tree-sha1 = "8b3fc30bc0390abdce15f8822c889f669baed73d"
+git-tree-sha1 = "18e8f4d1426e965c7b532ddd260599e1510d26ce"
 uuid = "4b34888f-f399-49d4-9bb3-47ed5cae4e65"
-version = "1.0.1"
+version = "1.0.0"
 
-[[deps.Qt5Base_jll]]
-deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
-git-tree-sha1 = "0c03844e2231e12fda4d0086fd7cbe4098ee8dc5"
-uuid = "ea2cea3b-5b76-57ae-a6ef-0a8af62496e1"
-version = "5.15.3+2"
+[[deps.Qt6Base_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Vulkan_Loader_jll", "Xorg_libSM_jll", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_cursor_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "libinput_jll", "xkbcommon_jll"]
+git-tree-sha1 = "492601870742dcd38f233b23c3ec629628c1d724"
+uuid = "c0090381-4147-56d7-9ebc-da0b1113ec56"
+version = "6.7.1+1"
+
+[[deps.Qt6Declarative_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Qt6Base_jll", "Qt6ShaderTools_jll"]
+git-tree-sha1 = "e5dd466bf2569fe08c91a2cc29c1003f4797ac3b"
+uuid = "629bc702-f1f5-5709-abd5-49b8460ea067"
+version = "6.7.1+2"
+
+[[deps.Qt6ShaderTools_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Qt6Base_jll"]
+git-tree-sha1 = "1a180aeced866700d4bebc3120ea1451201f16bc"
+uuid = "ce943373-25bb-56aa-8eca-768745ed7b5a"
+version = "6.7.1+1"
+
+[[deps.Qt6Wayland_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Qt6Base_jll", "Qt6Declarative_jll"]
+git-tree-sha1 = "729927532d48cf79f49070341e1d918a65aba6b0"
+uuid = "e99dba38-086e-5de3-a5b1-6e4c66e897c3"
+version = "6.7.1+1"
 
 [[deps.QuadGK]]
 deps = ["DataStructures", "LinearAlgebra"]
@@ -2771,9 +2553,20 @@ version = "0.7.0"
 
 [[deps.SIMD]]
 deps = ["PrecompileTools"]
-git-tree-sha1 = "52af86e35dd1b177d051b12681e1c581f53c281b"
+git-tree-sha1 = "98ca7c29edd6fc79cd74c61accb7010a4e7aee33"
 uuid = "fdea26ae-647d-5447-a871-4b548cad5224"
-version = "3.7.0"
+version = "3.6.0"
+
+[[deps.SIMDTypes]]
+git-tree-sha1 = "330289636fb8107c5f32088d2741e9fd7a061a5c"
+uuid = "94e857df-77ce-4151-89e5-788b33177be4"
+version = "0.1.0"
+
+[[deps.SLEEFPirates]]
+deps = ["IfElse", "Static", "VectorizationBase"]
+git-tree-sha1 = "456f610ca2fbd1c14f5fcf31c6bfadc55e7d66e0"
+uuid = "476501e8-09a2-5ece-8869-fb82de89a1fa"
+version = "0.6.43"
 
 [[deps.Scratch]]
 deps = ["Dates"]
@@ -2783,13 +2576,19 @@ version = "1.2.1"
 
 [[deps.SentinelArrays]]
 deps = ["Dates", "Random"]
-git-tree-sha1 = "d0553ce4031a081cc42387a9b9c8441b7d99f32d"
+git-tree-sha1 = "305becf8af67eae1dbc912ee9097f00aeeabb8d5"
 uuid = "91c51154-3ec4-41a3-a24f-3f23e20d615c"
-version = "1.4.7"
+version = "1.4.6"
 
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 version = "1.11.0"
+
+[[deps.Setfield]]
+deps = ["ConstructionBase", "Future", "MacroTools", "StaticArraysCore"]
+git-tree-sha1 = "e2cc6d8c88613c05e1defb55170bf5ff211fbeac"
+uuid = "efcf1570-3423-57d1-acb7-fd33fddbac46"
+version = "1.1.1"
 
 [[deps.SharedArrays]]
 deps = ["Distributed", "Mmap", "Random", "Serialization"]
@@ -2830,12 +2629,6 @@ git-tree-sha1 = "2da10356e31327c7096832eb9cd86307a50b1eb6"
 uuid = "45858cf5-a6b0-47a3-bbea-62219f50df47"
 version = "0.1.3"
 
-[[deps.SnoopPrecompile]]
-deps = ["Preferences"]
-git-tree-sha1 = "e760a70afdcd461cf01a575947738d359234665c"
-uuid = "66db9d55-30c0-4569-8b51-7e840670fc0c"
-version = "1.0.3"
-
 [[deps.Sockets]]
 uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
 version = "1.11.0"
@@ -2873,6 +2666,23 @@ git-tree-sha1 = "46e589465204cd0c08b4bd97385e4fa79a0c770c"
 uuid = "cae243ae-269e-4f55-b966-ac2d0dc13c15"
 version = "0.1.1"
 
+[[deps.Static]]
+deps = ["CommonWorldInvalidations", "IfElse", "PrecompileTools"]
+git-tree-sha1 = "87d51a3ee9a4b0d2fe054bdd3fc2436258db2603"
+uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
+version = "1.1.1"
+
+[[deps.StaticArrayInterface]]
+deps = ["ArrayInterface", "Compat", "IfElse", "LinearAlgebra", "PrecompileTools", "Static"]
+git-tree-sha1 = "96381d50f1ce85f2663584c8e886a6ca97e60554"
+uuid = "0d7ed370-da01-4f52-bd93-41d350b8b718"
+version = "1.8.0"
+weakdeps = ["OffsetArrays", "StaticArrays"]
+
+    [deps.StaticArrayInterface.extensions]
+    StaticArrayInterfaceOffsetArraysExt = "OffsetArrays"
+    StaticArrayInterfaceStaticArraysExt = "StaticArrays"
+
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "PrecompileTools", "Random", "StaticArraysCore"]
 git-tree-sha1 = "777657803913ffc7e8cc20f0fd04b634f871af8f"
@@ -2907,9 +2717,9 @@ version = "1.7.0"
 
 [[deps.StatsBase]]
 deps = ["DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
-git-tree-sha1 = "d1bf48bfcc554a3761a133fe3a9bb01488e06916"
+git-tree-sha1 = "5cf7606d6cef84b543b483848d4ae08ad9832b21"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-version = "0.33.21"
+version = "0.34.3"
 
 [[deps.StatsFuns]]
 deps = ["HypergeometricFunctions", "IrrationalConstants", "LogExpFunctions", "Reexport", "Rmath", "SpecialFunctions"]
@@ -2939,15 +2749,9 @@ version = "0.15.7"
 
 [[deps.StringManipulation]]
 deps = ["PrecompileTools"]
-git-tree-sha1 = "a04cabe79c5f01f4d723cc6704070ada0b9d46d5"
+git-tree-sha1 = "a6b1675a536c5ad1a60e5a5153e1fee12eb146e3"
 uuid = "892a3eda-7b42-436c-8928-eab12a02cf0e"
-version = "0.3.4"
-
-[[deps.StructTypes]]
-deps = ["Dates", "UUIDs"]
-git-tree-sha1 = "159331b30e94d7b11379037feeb9b690950cace8"
-uuid = "856f2bd8-1eba-4b0a-8007-ebc267875bd4"
-version = "1.11.0"
+version = "0.4.0"
 
 [[deps.StyledStrings]]
 uuid = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
@@ -3001,6 +2805,12 @@ deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 version = "1.11.0"
 
+[[deps.ThreadingUtilities]]
+deps = ["ManualMemory"]
+git-tree-sha1 = "eda08f7e9818eb53661b3deb74e3159460dfbc27"
+uuid = "8290d209-cae3-49c0-8002-c8c24d57dab5"
+version = "0.5.2"
+
 [[deps.TiffImages]]
 deps = ["ColorTypes", "DataStructures", "DocStringExtensions", "FileIO", "FixedPointNumbers", "IndirectArrays", "Inflate", "Mmap", "OffsetArrays", "PkgVersion", "ProgressMeter", "SIMD", "UUIDs"]
 git-tree-sha1 = "38f139cc4abf345dd4f22286ec000728d5e8e097"
@@ -3008,10 +2818,10 @@ uuid = "731e570b-9d59-4bfa-96dc-6df516fadf69"
 version = "0.10.2"
 
 [[deps.TiledIteration]]
-deps = ["OffsetArrays"]
-git-tree-sha1 = "5683455224ba92ef59db72d10690690f4a8dc297"
+deps = ["OffsetArrays", "StaticArrayInterface"]
+git-tree-sha1 = "1176cc31e867217b06928e2f140c90bd1bc88283"
 uuid = "06e1c1a7-607b-532d-9fad-de7d9aa2abac"
-version = "0.3.1"
+version = "0.5.0"
 
 [[deps.TranscodingStreams]]
 git-tree-sha1 = "0c45878dcfdcfa8480052b6ab162cdd138781742"
@@ -3073,6 +2883,18 @@ git-tree-sha1 = "ca0969166a028236229f63514992fc073799bb78"
 uuid = "41fe7b60-77ed-43a1-b4f0-825fd5a5650d"
 version = "0.2.0"
 
+[[deps.VectorizationBase]]
+deps = ["ArrayInterface", "CPUSummary", "HostCPUFeatures", "IfElse", "LayoutPointers", "Libdl", "LinearAlgebra", "SIMDTypes", "Static", "StaticArrayInterface"]
+git-tree-sha1 = "4ab62a49f1d8d9548a1c8d1a75e5f55cf196f64e"
+uuid = "3d5dd08c-fd9d-11e8-17fa-ed2836048c2f"
+version = "0.21.71"
+
+[[deps.Vulkan_Loader_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Wayland_jll", "Xorg_libX11_jll", "Xorg_libXrandr_jll", "xkbcommon_jll"]
+git-tree-sha1 = "2f0486047a07670caad3a81a075d2e518acc5c59"
+uuid = "a44049a8-05dd-5a78-86c9-5fde0876e88c"
+version = "1.3.243+0"
+
 [[deps.Wayland_jll]]
 deps = ["Artifacts", "EpollShim_jll", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg", "XML2_jll"]
 git-tree-sha1 = "7558e29847e99bc3f04d6569e82d0f5c54460703"
@@ -3093,15 +2915,15 @@ version = "1.4.2"
 
 [[deps.Widgets]]
 deps = ["Colors", "Dates", "Observables", "OrderedCollections"]
-git-tree-sha1 = "e9aeb174f95385de31e70bd15fa066a505ea82b9"
+git-tree-sha1 = "fcdae142c1cfc7d89de2d11e08721d0f2f86c98a"
 uuid = "cc8bc4a8-27d6-5769-a93b-9d913e69aa62"
-version = "0.6.7"
+version = "0.6.6"
 
 [[deps.WoodburyMatrices]]
 deps = ["LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "5f24e158cf4cee437052371455fe361f526da062"
+git-tree-sha1 = "c1a7aa6219628fcd757dede0ca95e245c5cd9511"
 uuid = "efce3f68-66dc-5838-9240-27a6d6f5f9b6"
-version = "0.5.6"
+version = "1.0.0"
 
 [[deps.WorkerUtilities]]
 git-tree-sha1 = "cd1659ba0d57b71a464a29e64dbc67cfe83d54e7"
@@ -3110,15 +2932,33 @@ version = "1.6.1"
 
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
-git-tree-sha1 = "a2fccc6559132927d4c5dc183e3e01048c6dcbd6"
+git-tree-sha1 = "6a451c6f33a176150f315726eba8b92fbfdb9ae7"
 uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
-version = "2.13.5+0"
+version = "2.13.4+0"
 
 [[deps.XSLT_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgcrypt_jll", "Libgpg_error_jll", "Libiconv_jll", "XML2_jll", "Zlib_jll"]
 git-tree-sha1 = "a54ee957f4c86b526460a720dbc882fa5edcbefc"
 uuid = "aed1982a-8fda-507f-9586-7b0439959a61"
 version = "1.1.41+0"
+
+[[deps.XZ_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "15e637a697345f6743674f1322beefbc5dcd5cfc"
+uuid = "ffd25f8a-64ca-5728-b0f7-c24cf3aae800"
+version = "5.6.3+0"
+
+[[deps.Xorg_libICE_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "326b4fea307b0b39892b3e85fa451692eda8d46c"
+uuid = "f67eecfb-183a-506d-b269-f58e52b52d7c"
+version = "1.1.1+0"
+
+[[deps.Xorg_libSM_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libICE_jll"]
+git-tree-sha1 = "3796722887072218eabafb494a13c963209754ce"
+uuid = "c834827a-8449-5923-a945-d239c165b7dd"
+version = "1.2.4+0"
 
 [[deps.Xorg_libX11_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libxcb_jll", "Xorg_xtrans_jll"]
@@ -3198,6 +3038,12 @@ git-tree-sha1 = "730eeca102434283c50ccf7d1ecdadf521a765a4"
 uuid = "cc61e674-0454-545c-8b26-ed2c68acab7a"
 version = "1.1.2+0"
 
+[[deps.Xorg_xcb_util_cursor_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_jll", "Xorg_xcb_util_renderutil_jll"]
+git-tree-sha1 = "04341cb870f29dcd5e39055f895c39d016e18ccd"
+uuid = "e920d4aa-a673-5f3a-b3d7-f755a4d47c43"
+version = "0.1.4+0"
+
 [[deps.Xorg_xcb_util_image_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_xcb_util_jll"]
 git-tree-sha1 = "0fab0a40349ba1cba2c1da699243396ff8e94b97"
@@ -3257,11 +3103,23 @@ git-tree-sha1 = "555d1076590a6cc2fdee2ef1469451f872d8b41b"
 uuid = "3161d3a3-bdf6-5164-811a-617609db77b4"
 version = "1.5.6+1"
 
+[[deps.eudev_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "gperf_jll"]
+git-tree-sha1 = "431b678a28ebb559d224c0b6b6d01afce87c51ba"
+uuid = "35ca27e7-8b34-5b7f-bca9-bdc33f59eb06"
+version = "3.2.9+0"
+
 [[deps.fzf_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "936081b536ae4aa65415d869287d43ef3cb576b2"
 uuid = "214eeab7-80f7-51ab-84ad-2988db7cef09"
 version = "0.53.0+0"
+
+[[deps.gperf_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "3516a5630f741c9eecb3720b1ec9d8edc3ecc033"
+uuid = "1a1c6b14-54f6-533d-8383-74cd7377aa70"
+version = "3.1.1+0"
 
 [[deps.libaom_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -3286,11 +3144,23 @@ git-tree-sha1 = "9bf7903af251d2050b467f76bdbe57ce541f7f4f"
 uuid = "1183f4f0-6f2a-5f1a-908b-139f9cdfea6f"
 version = "0.2.2+0"
 
+[[deps.libevdev_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "141fe65dc3efabb0b1d5ba74e91f6ad26f84cc22"
+uuid = "2db6ffa8-e38f-5e21-84af-90c45d0032cc"
+version = "1.11.0+0"
+
 [[deps.libfdk_aac_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "8a22cf860a7d27e4f3498a0fe0811a7957badb38"
 uuid = "f638f0a6-7fb0-5443-88ba-1cc74229b280"
 version = "2.0.3+0"
+
+[[deps.libinput_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "eudev_jll", "libevdev_jll", "mtdev_jll"]
+git-tree-sha1 = "ad50e5b90f222cfe78aa3d5183a20a12de1322ce"
+uuid = "36db933b-70db-51c0-b978-0f229ee0e533"
+version = "1.18.0+0"
 
 [[deps.libpng_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Zlib_jll"]
@@ -3309,6 +3179,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Ogg_jll", "Pkg"]
 git-tree-sha1 = "490376214c4721cdaca654041f635213c6165cb3"
 uuid = "f27f6e37-5d2b-51aa-960f-b287f2bc3b7a"
 version = "1.3.7+2"
+
+[[deps.mtdev_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "814e154bdb7be91d78b6802843f76b6ece642f11"
+uuid = "009596ad-96f7-51b1-9f1b-5ce2d5e8a71e"
+version = "1.1.6+0"
 
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -3346,89 +3222,63 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╟─1fc288d0-e38d-11ed-1239-49fc6de01db3
-# ╟─dd113c37-a08b-4c31-b5bc-7a38d2efdcbe
-# ╟─4ffdd121-dceb-4e8a-8f84-f21aad3f84f2
-# ╟─e8e4eb9d-12b7-486d-9b40-7174aba0b072
-# ╟─da4d2151-6cae-41fc-8966-de03decaf5a8
-# ╟─7c18f869-f0ce-44c6-99d3-c0ab2b801001
-# ╟─bc027ee4-9912-480a-82ab-7b7f00d29403
-# ╟─a77a3328-9fb7-4bfb-b576-00fe281b826e
-# ╠═7292bdd6-1e43-464e-829a-013809f06f46
-# ╠═af2399d5-6679-4529-a382-b3b0b9601882
-# ╟─d5276e0c-8b29-4efa-b1c6-d080658a7a3c
-# ╟─edc7f20a-5477-410b-b6d2-64795d0e29dd
-# ╟─6d84ebd3-6949-42ff-9b06-f7fd4e7c8f0d
-# ╠═5ee27ca3-a0ee-42a5-a0f2-0eddee47f81a
-# ╟─adb0c520-3229-48c5-ac4d-5fb2e0bf8093
-# ╠═473b48ae-b5c6-4de4-b776-6b664bf46082
-# ╠═d2053cf6-59a7-4ace-a1ff-838feca23056
-# ╟─ef386a1a-f755-49fa-80bb-27d5c338d2e3
-# ╟─1cc20658-6725-4a47-a0be-4e42ad2c80b9
-# ╟─e41ff6d5-f332-4601-9092-7d182bcd76d2
-# ╟─3316f2ff-1ca2-43c3-9c59-dc352b75f9a1
-# ╟─60e617ba-4ed4-4353-9afe-61fa677319c0
-# ╟─fc95c8db-3373-4665-afa5-e79c65c0d738
-# ╟─53fc9db0-28d3-4deb-96f0-91a8e1fe6dbc
-# ╟─4d665b9d-a085-482f-b60f-670d3cc2d541
-# ╟─1cf4e218-e1e6-47ad-80a2-94fddedecb10
-# ╟─7d855e7e-8dff-4de9-b5ee-a7b09d00d978
-# ╟─ff672c36-1722-44d6-9003-0a3a57c05bf6
-# ╟─b9642a82-4595-4d3b-a240-cc43253fb2a2
-# ╟─3f34b8a0-9655-454c-8554-f95821375e90
-# ╟─8f39a6ee-fe9b-421e-b4ca-fc88c706f2b9
-# ╟─e62d4343-8261-4c49-94ac-06cb9db67f68
-# ╟─59c324c4-8b3d-4d0d-a460-13d1a334c8eb
-# ╟─ca12f163-518f-4899-8730-0bf5e019f899
-# ╟─372f70bf-8b76-4f8a-af3a-955622fd6424
-# ╟─143a5bcc-6f88-42f5-b8f9-c8487a6aa030
-# ╟─a27ebbdd-0a8b-4f11-a0ab-6a41c991ef88
-# ╟─df6118c5-c498-413b-a530-9003fa1340fd
-# ╟─8da7da20-885d-43c7-a8d9-1b78baedd11d
-# ╟─11d017f1-e15f-47df-9e23-d4d9629ebd63
-# ╠═380feaa3-5a52-4803-a561-3f055510ae16
-# ╟─5720877a-e485-4a1d-b286-b7572909658c
-# ╟─52868e72-74b1-4cfc-9ba6-945fe3c6db8f
-# ╟─1a53fd65-8ce5-452f-98a5-129ef8d56329
-# ╟─72ab7cdb-f509-48a4-b587-57de058182a8
-# ╟─1bb3bb3a-9ffe-4690-817b-ea83ce9e46b6
-# ╟─30f08888-0d6c-463d-afce-d60a7deade83
-# ╟─825605ec-7c8e-4452-ba4d-63b7d5204d3a
-# ╟─d0044ffa-40b7-4675-95fc-e280b28a1207
-# ╟─63f2a028-c4a6-4205-bfa5-288a2fcb02c9
-# ╟─a094cdf1-bd0c-4c31-ac0b-dd453ca8075f
-# ╠═b9b257e4-61bf-4362-bb7f-39931ac0cc0e
-# ╟─86b5ad8d-65de-40f8-aff0-b82c1431712d
-# ╟─d0969087-77c8-410d-b2c1-6a4a6a6a316d
-# ╟─d98e4604-194b-4f4d-a6a9-8f62884c5985
-# ╟─a4f12432-4b73-4beb-8e0e-9ddeee84389d
-# ╟─47bc75f3-a8fd-4878-9dcd-5ce7151c0820
-# ╟─9020e518-ab75-4827-b7b2-d0f25c11a0dc
-# ╟─8903ef6a-eff8-4f9c-8f31-374e1e2533c0
-# ╟─a4363e40-4420-428f-aec8-9808d39f0e08
-# ╟─bb96c16e-2d89-483e-891d-c636f514e30f
-# ╟─f578ed91-eec9-4394-8cdc-39f6511a2be9
-# ╟─c228eba0-89d6-40fe-8d5e-94a41627c4c9
-# ╟─50332a44-81c0-4b80-ab42-517b8196294b
-# ╟─63e8f438-abd0-4ee7-8121-cf557e56dc73
-# ╠═a599374a-dfd5-45b4-b7bd-9bb728872b55
-# ╟─ce42d8b6-003e-4e5c-83ef-41372a3526b8
-# ╟─87f44b92-74a1-4524-b227-a93a3ac895ad
-# ╟─a46aa97d-679a-4b37-a6c0-a6c5148be92f
-# ╟─23f880c2-b334-4472-9c93-733ebdc56ecf
-# ╠═0f84687b-38b0-4302-99e6-43e3aa2c6443
-# ╟─0e510137-2641-43a1-af41-fb1fae61ecdf
-# ╟─07eb16a0-68bf-4cd5-bd8c-2387497e57d6
-# ╟─f77f6c00-3a8a-45f6-a3d0-801693ea6812
-# ╟─57ddd596-68b7-43bd-93a8-998d16848f85
-# ╠═e80aee70-62ad-446e-884c-c1785218f9cb
-# ╠═4c237533-1186-4b7f-81a0-8fe3a271c437
-# ╟─7097bd8d-bb77-45fc-a101-c157519abff6
-# ╟─836efb58-18ff-4a3e-8a55-5b0a4457a13d
-# ╟─8f279342-3e6d-408b-b9d1-023be592044f
-# ╟─e1a61549-25c7-412c-8a9a-11251b8a81ae
-# ╟─5d166d4a-e6c9-4bca-a060-32985ca63ac6
-# ╟─10793541-0c79-4195-980d-1e9a38755e45
-# ╟─d72b812f-6aa5-4b89-96f1-6941d666c094
+# ╟─fdf4dcef-08ba-4be7-9201-0bb834ce127f
+# ╟─ac2597c9-e7d7-4c0d-8bcd-1b4f6e597f48
+# ╟─a18a4598-c89c-482e-bc27-c8e953e2e6d6
+# ╟─c4932bc0-e06d-4f00-a8c7-ab3d6cff8f6b
+# ╟─69d6fae1-7184-4d97-b74a-b9e5f3ea172a
+# ╟─5a56e0b8-697f-4413-857a-7f3f6aeae649
+# ╟─f1225001-2767-4f06-9a8b-5143d78fddc1
+# ╟─4d0a36eb-546a-4779-8b54-92d64f377e2a
+# ╟─db113b22-a4d7-486b-a900-b72ba24a5219
+# ╟─96557436-1905-41c1-908a-83bf2496471a
+# ╟─3768c5bf-7938-4022-a89e-c2a596b2bec6
+# ╟─457037bb-c9a4-4e1f-9f9c-d77c4617e5bb
+# ╟─a09a88c7-b9ba-4ba4-9fdb-d83b9f93a059
+# ╟─2ff05254-37a9-4bd2-b384-766b0dd364d5
+# ╟─5499d79a-9adb-4c12-a789-d8497d3c128d
+# ╟─4c385d0d-9bd1-4ccd-93af-adc8187e0a4a
+# ╟─8c5f5b68-630a-49eb-9ce1-55856c613b83
+# ╟─13d9aaab-cbb7-460d-9d92-04b98efdd4cd
+# ╟─06181b9e-496e-4b76-b2c2-980e62f5e2cd
+# ╟─66192588-7730-4505-ac79-e7fc8ce3bc0d
+# ╟─7c05a865-abf9-43d0-84a4-031ffce52162
+# ╟─6a81774c-6477-4994-95fe-54daf66df2db
+# ╟─83f15e92-b4a9-4799-b0df-73fc1ae73340
+# ╟─812211f2-71d7-4c69-b8af-794753e67660
+# ╟─05c4ae42-c2c1-47f2-87f8-cecdd74f5505
+# ╟─e1021668-35de-4ce3-b541-050d91079862
+# ╟─441ce075-1756-4ef0-a913-758214c54d29
+# ╟─f0f6e03e-9c93-4756-8556-6d5f4e37bb0a
+# ╟─9caddc45-cb09-418d-88ae-024fd94542f5
+# ╟─cdc5e3f6-b26e-4223-83c8-5b3cdf22840d
+# ╟─99a47ae1-b82c-442c-8822-cbea2444c94e
+# ╟─44242c51-682c-4b3b-93e1-dc77fce4edea
+# ╟─3228e14e-30f3-404c-86d6-d50affe9d26b
+# ╟─cf1fd5c1-8a28-4a18-9a42-9d166447cbd8
+# ╟─af65283f-5aec-4c32-adbc-501dc95e79cc
+# ╟─057310a6-c51b-424c-a1b4-ab186ea26d2d
+# ╟─1d5f8a8c-5fca-45b4-8e84-d02efe08beae
+# ╟─b4b79d34-9ac6-4e56-b7d1-9af441ae8573
+# ╟─0279db65-a0a3-4814-ab12-c5b13a7195cb
+# ╟─d6ddbbe0-b53e-4481-bbd8-d3634bbae3d9
+# ╟─fb72c354-afdd-4ee3-a90d-d95f4e363094
+# ╟─85cc63b1-29eb-42a5-b5d8-baca354dddfd
+# ╟─fc169896-c70e-4b95-b515-4135e75b2a82
+# ╟─0ae15367-c1fd-4d72-a5fb-4bb466fcdd32
+# ╟─8cf4b74d-cd75-4fb8-9adf-d853ae78d792
+# ╟─e5d8c7f5-d85c-4a61-b631-e9ebccb19343
+# ╟─172d4831-fa88-4716-8d01-2385c0ac30f2
+# ╟─912e1c54-0653-477d-a486-2e11242588bd
+# ╟─87d297f3-a28f-40d8-9ca9-966b9e43bc31
+# ╟─81b569d1-40ba-48af-b992-94153c9737e4
+# ╟─d40052d8-e671-4ffb-ab3d-d5c627286c6c
+# ╟─e542508f-6564-4390-8414-95838cf641fd
+# ╟─f229fdba-be0c-436d-9391-99ee85b52a2b
+# ╟─73e5c9dd-61ce-41fe-99d5-1a02bdfd6f5e
+# ╟─0db0fbbd-ddb9-42c4-9112-79119b834164
+# ╟─99481d6d-edce-4aba-92ac-a3aa2a689a0d
+# ╟─814c68ce-715d-44bd-813f-cbaaf5cc303f
+# ╟─bd10f94b-33b4-450c-90a5-e3ab42dbfb93
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

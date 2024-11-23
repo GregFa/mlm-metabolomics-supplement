@@ -14,7 +14,13 @@ High-throughput metabolomics data provide a detailed molecular window into biolo
 
 ### Materials
 
-- [Pluto notebook Analysis]()
+This repository offers a comprehensive suite of tools and notebooks for preprocessing, analyzing, and visualizing metabolomics data analysis results across three studies:
+
+- [**Statin-Associated Muscle Symptoms (SAMS) Study Metabolomics Analysis**](https://github.com/senresearch/mlm-metabolomics-supplement/tree/main/SAMSstudy)  
+- [**Pansteatitis Mozambique Tilapia Metabolomics Analysis**](https://github.com/senresearch/mlm-metabolomics-supplement/tree/main/PANSTEATITISstudy)  
+- [**COPD Study Metabolomics Analysis**](https://github.com/senresearch/mlm-metabolomics-supplement/tree/main/COPDstudy)
+
+Each study is organized into its own folder, containing detailed outlines and descriptions of the code used to process the corresponding metabolomics data.
 
 ### References:
 
