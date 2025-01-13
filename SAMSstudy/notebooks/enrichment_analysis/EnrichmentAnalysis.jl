@@ -9,7 +9,7 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: Julia 1.11.1
+#     display_name: Julia 1.11.2
 #     language: julia
 #     name: julia-1.11
 # ---
@@ -517,9 +517,9 @@ p_ua
 
 # ## Enrichment Analysis
 
-# ## Over Representation Analysis
+# ### Over Representation Analysis
 
-# ### Compute P-values for each triglycerides
+# #### Compute P-values for each triglycerides
 
 TstatZI
 
@@ -589,14 +589,14 @@ end
 
 dfORA_tc = ora_results(pval_fishoil, dfRefTG.Total_C_cat, lvls_c, dfY, dfRefTG)
 
-# ### Double Bonds
+# #### Double Bonds
 
 dfORA_db = ora_results(pval_fishoil, dfRefTG.Total_DB_cat, lvls_db, dfY, dfRefTG)
 
 pval_fishoil_cat_adjusted = ccdf.(TDist(sampleN-1), abs.(TstatZcdbcat[2,:])).*2
 
 dfORA_compare = vcat(dfORA_tc[2:end, :], dfORA_db[2:end, :])
-dfORA_compare.Pval_MLM = pval_fishoil_cat_adjusted[2:end];
+dfORA_compare.Pval_MLM_adjusted = pval_fishoil_cat_adjusted[2:end];
 dfORA_compare
 
 pval_fishoil_db_cat_unadjusted = ccdf.(TDist(sampleN-1), abs.(TstatZdb[2,:])).*2;

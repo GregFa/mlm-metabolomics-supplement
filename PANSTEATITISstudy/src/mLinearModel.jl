@@ -46,7 +46,7 @@ Functions list
 Returns coefficients, confidence of interval, T-stats.
 
 """
-function getCoefs(Y::AbstractMatrix, X::AbstractMatrix, Zin::AbstractMatrix; zcritical = 1.96)
+function getCoefs(Y::AbstractMatrix, X::AbstractMatrix, Zin::AbstractMatrix; zcritical = 1.96, kwargs...)
        
     
     #########
@@ -57,7 +57,7 @@ function getCoefs(Y::AbstractMatrix, X::AbstractMatrix, Zin::AbstractMatrix; zcr
     dat = RawData(Response(Y), Predictors(X,Zin));
 
     # Estimate coefficients
-    est = mlm(dat, hasXIntercept=false, hasZIntercept= false);
+    est = mlm(dat; kwargs...);
    
     # get estimate
     estCoefOut = MatrixLM.coef(est);

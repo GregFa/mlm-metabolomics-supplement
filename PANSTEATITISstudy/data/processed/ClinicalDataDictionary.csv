@@ -1,0 +1,10 @@
+Variable name, Variable description
+Gender,Sex
+Age, Years
+Weight (KG), Kilogram
+Length (CM), Centimeter
+Annuli,Number of opaque zones on fish scales
+VET SCORE,Veterinarian score where vet score < 1 indicates healthy tilapia and  vet score ≥ 1 indicates pansteatitis-affected tilapia.
+PCV Color,Pigmentation visually observed
+PCV,Pigmentation concentration volume
+Histological Score,Histological examination score of the adipose tissue
