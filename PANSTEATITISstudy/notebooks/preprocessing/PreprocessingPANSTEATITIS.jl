@@ -8,7 +8,7 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: Julia 1.11.1
+#     display_name: Julia 1.11.2
 #     language: julia
 #     name: julia-1.11
 # ---
@@ -28,10 +28,18 @@
 # To use RCall for the first time, one needs to 
 # the location of the R home directory.
 firstTimeRCall = false
-if firstTimeRCall 
-    ENV["R_HOME"] = "C:/PROGRA~1/R/R-42~1.1" # from R.home() in R
+if firstTimeRCall
+    using Pkg
+    io = IOBuffer()
+    versioninfo(io)
+    if occursin("Windows", String(take!(io)))
+        ENV["R_HOME"] = "C:/PROGRA~1/R/R-43~1.1" # from R.home() in R
+    else 
+        ENV["R_HOME"] = "/usr/lib/R"
+
+    end
     Pkg.build("RCall")
-end     
+end      
 
 using CSV, DataFrames, Missings#, CategoricalArrays
 using StatsBase, Statistics#, MultivariateStats
