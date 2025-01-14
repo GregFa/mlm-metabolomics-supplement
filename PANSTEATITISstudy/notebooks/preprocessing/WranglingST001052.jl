@@ -241,6 +241,15 @@ dfClassification = fetch_properties(dfRef.Metabolite);
 # insertcols!(dfClassification, 1, :metabolite_name => dfRef.metabolite_name);
 first(dfClassification, 3)
 
+dfRef |> names
+
+dfClassification |> names
+
+# replace "-" by missing
+for c ∈ eachcol(dfClassification)
+           replace!(c, "-" => missing)
+end
+
 idxmissing = findall(ismissing.(dfClassification.main_class))
 dfRef.Metabolite[idxmissing]
 
@@ -282,6 +291,12 @@ dfRef
 dfClassification = fetch_properties(dfRef.StandardizedName);
 insertcols!(dfClassification, 1, :Metabolite => dfRef.Metabolite);
 first(dfClassification, 3)
+
+# replace "-" by missing
+for c ∈ eachcol(dfClassification)
+           replace!(c, "-" => missing)
+end
+
 idxmissing = findall(ismissing.(dfClassification.main_class))
 dfRef.StandardizedName[idxmissing]
 
@@ -289,9 +304,15 @@ dfRef.StandardizedName[idxmissing]
 # We will filter *PMe(16:0/18:1)* (phosphatidylmethanol) [5] and *ZyE(22:5)*.
 #
 
+dfRef |> names
+
+dfClassification |> names
+
 dfRef = leftjoin(dfRef, dfClassification, on = :Metabolite); size(dfRef)
+
 # filter
-deleteat!(dfRef, idxmissing[[2,3]]);
+# deleteat!(dfRef, idxmissing[[2,3]]);
+deleteat!(dfRef, idxmissing[[5,11]]);
 
 # ### Use GOSLIN
 
