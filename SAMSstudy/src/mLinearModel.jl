@@ -292,7 +292,8 @@ getCoefsgetCoefs(
 Returns coefficients, confidence of interval, T-stats and variance.
 
 """
-function getCoefs(Y::AbstractMatrix, X::AbstractMatrix, Zin::AbstractMatrix; zcritical = 1.96)
+function getCoefs(Y::AbstractMatrix, X::AbstractMatrix, Zin::AbstractMatrix; 
+    zcritical = 1.96, hasXIntercept = true, hasZIntercept = true)
        
     
     #########
@@ -300,10 +301,11 @@ function getCoefs(Y::AbstractMatrix, X::AbstractMatrix, Zin::AbstractMatrix; zcr
     #########
     
     # Construct a RawData object
-    dat = RawData(Response(Y), Predictors(X,Zin));
+    dat = RawData(Response(Y), Predictors(X,Zin, hasXIntercept, hasZIntercept));
 
     # Estimate coefficients
-    est = mlm(dat, addXIntercept=false, addZIntercept= false);
+    # est = mlm(dat, hasXIntercept = false, hasZIntercept = false); # v. 0.1.3
+    est = mlm(dat, addXIntercept = hasXIntercept, addZIntercept = hasZIntercept);
    
     # get estimate
     estCoefOut = MatrixLM.coef(est);
@@ -315,7 +317,7 @@ function getCoefs(Y::AbstractMatrix, X::AbstractMatrix, Zin::AbstractMatrix; zcr
     CIOut = SE.*zcritical
     
     # get T-statistics
-    tStatsOut = t_stat(est)
+    tStatsOut = t_stat(est, true)
     
     return estCoefOut, CIOut, tStatsOut, σ² 
 end
