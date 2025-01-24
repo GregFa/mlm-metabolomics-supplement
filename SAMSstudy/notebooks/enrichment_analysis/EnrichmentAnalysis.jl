@@ -7,9 +7,9 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.1
 #   kernelspec:
-#     display_name: Julia 1.11.2
+#     display_name: Julia 1.11.3
 #     language: julia
 #     name: julia-1.11
 # ---
@@ -362,7 +362,7 @@ p_scatter = scatter(
 #
 # We modeled the MLM according to the length of Carbon chain and the degree of unstaturation of the Triglycerides.
 
-# #### Total Carbon 
+# ### Total Carbon 
 
 # Build the Z matrix based on carbon chain length:
 
@@ -410,7 +410,7 @@ p_tc_ci = confidenceplot(
         size=(400,300),  
 )
 
-# #### Double Bonds 
+# ### Double Bonds 
 
 dfZdbcat = DataFrame(intercept = ones(Float64, size(dfZraw)[1]),
         TotalDB_3_6 = ((dfZraw.Total_DB .>= 3) .& (dfZraw.Total_DB .< 6))*1,
