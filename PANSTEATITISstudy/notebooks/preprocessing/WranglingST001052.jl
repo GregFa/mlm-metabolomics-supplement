@@ -7,9 +7,9 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.1
 #   kernelspec:
-#     display_name: Julia 1.11.2
+#     display_name: Julia 1.11.3
 #     language: julia
 #     name: julia-1.11
 # ---
@@ -313,6 +313,14 @@ dfRef = leftjoin(dfRef, dfClassification, on = :Metabolite); size(dfRef)
 # filter
 # deleteat!(dfRef, idxmissing[[2,3]]);
 deleteat!(dfRef, idxmissing[[5,11]]);
+
+dfRef.sub_class |> unique
+
+?skipmissing
+
+findall(occursin.("PE-NMe2", skipmissing(dfRef.sub_class)))
+
+skipmissing(dfRef.sub_class)[29]
 
 # ### Use GOSLIN
 

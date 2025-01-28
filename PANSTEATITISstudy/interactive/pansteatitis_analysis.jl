@@ -311,6 +311,9 @@ begin
 	latexify(dfFreq_sub; env=:mdtable, latex=false)
 end
 
+# ╔═╡ 51519392-ec6b-4324-a77e-fc9766aa80c6
+unique(dfRef.sub_class)
+
 # ╔═╡ 53fc9db0-28d3-4deb-96f0-91a8e1fe6dbc
 md"""
 ## Modeling Decision
@@ -498,12 +501,12 @@ if (@isdefined mX)
 	if ("(Intercept)" in vFrmlNames)
 		CoefZI, CIZI, TstatZI, varZI = getCoefs(
 			mY, mX, ZI; 
-			addXIntercept=false, addZIntercept= false
+			hasXIntercept=false, hasZIntercept= false
 		);
 	else 
 		CoefZI, CIZI, TstatZI, varZI = getCoefs(
 			mY, mX, ZI; 
-			addXIntercept=true, addZIntercept= false
+			hasXIntercept=true, hasZIntercept= false
 		);
 	end
 	
@@ -595,12 +598,12 @@ if (@isdefined mX)
 	if ("(Intercept)" in vFrmlNames)
 		CoefZsp, CIZsp, TstatZsp, varZsp = getCoefs(
 			mY, mX, mZsup; 
-			addXIntercept=false, addZIntercept= false
+			hasXIntercept=false, hasZIntercept= false
 		);
 	else 
 		CoefZsp, CIZsp, TstatZsp, varZsp = getCoefs(
 			mY, mX, mZsup; 
-			addXIntercept=true, addZIntercept= false
+			hasXIntercept=true, hasZIntercept= false
 		);
 	end
 	
@@ -724,12 +727,12 @@ if (@isdefined mX)
 	if ("(Intercept)" in vFrmlNames)
 		CoefZsb, CIZsb, TstatZsb, varZsb = getCoefs(
 			mY[:, idx_greater_4], mX, mZsub; 
-			addXIntercept=false, addZIntercept= false
+			hasXIntercept=false, hasZIntercept= false
 		);
 	else 
 		CoefZsb, CIZsb, TstatZsb, varZsb = getCoefs(
 			mY[:, idx_greater_4], mX, mZsub; 
-			addXIntercept=true, addZIntercept= false
+			hasXIntercept=true, hasZIntercept= false
 		);
 	end
 	
@@ -791,12 +794,16 @@ begin
 	if @isdefined TstatZsb
 		
 		idxCovarsub = findall(vPseudoFrmlNames .== fix_covar_name(xCovarFig_sb))
-		idx_sub = findall(collect(dfFreq_sub.Count) .>=5);
+		idx_sub = findall((collect(dfFreq_sub.Count) .>=5) .&& 
+						  (dfFreq_sub.ID .!= "NA")
+		);
+
+		idx_NA_sub = findall(dfFreq_sub.ID .== "NA")
 		
-		psb = confidenceplot(vec(permutedims(CoefZsb[idxCovarsub, :])),#,idxpan])), 
+		psb = confidenceplot(vec(permutedims(CoefZsb[idxCovarsub, Not(idx_NA_sub)])),#,idxpan])), 
 			dfFreq_sub.:("Sub Class")[idx_sub],
 		    # levelsSub[idxpan],
-		    vec(permutedims(CIZsb[idxCovarsub, :])),# idxpan])),
+		    vec(permutedims(CIZsb[idxCovarsub, Not(idx_NA_sub)])),# idxpan])),
 		    xlabel = xCovarFig_sb*" Effect Size", legend = false,
 		    fontfamily = myfont,
 			titlefontsize = mytitlefontsize,
@@ -820,10 +827,13 @@ if (@isdefined mX)
 		# DataFrame(hcat(Int.(mZsub[:,1:end]), dfRef.super_class[:]), vcat(levelsSub, ["Class"]))
 		DataFrame(Int.(mZsub[:,1:end]), dfFreq_sub.:("Sub Class")[idx_sub])
 	else
-		md"Z matrix design is based on super classes."
+		md"Z matrix design is based on sub classes."
 	end
 end
 end
+
+# ╔═╡ 1cc0ec50-3408-4641-891a-af41f56c1025
+dfFreq_sub.:("Sub Class")[idx_sub]
 
 # ╔═╡ 47bc75f3-a8fd-4878-9dcd-5ce7151c0820
 md"""
@@ -863,12 +873,12 @@ if (@isdefined mX)
 	if ("(Intercept)" in vFrmlNames)
 		CoefZItg, CIZItg, TstatZItg, varZItg = getCoefs(
 			mYTG, mX, ZItg; 
-			addXIntercept=false, addZIntercept= false
+			hasXIntercept=true, hasZIntercept= false
 		);
 	else 
 		CoefZItg, CIZItg, TstatZItg, varZItg = getCoefs(
 			mYTG, mX, ZItg; 
-			addXIntercept=true, addZIntercept= false
+			hasXIntercept=false, hasZIntercept= false
 		);
 	end
 		
@@ -920,7 +930,7 @@ if (@isdefined xCovarFigTG)
 	zlim2 = maximum(abs.(TstatZItg[idxCovarTG,:]))
 	ptg_scatter = Plots.scatter(
 		dfRefTG.Total_DB .+ rand(Uniform(-a,a),length(dfRefTG.Total_DB)),
-		dfRefTG.Total_C,
+		dfRefTG.Total_C .+ rand(Uniform(-a,a),length(dfRefTG.Total_C)),
 		zcolor = permutedims(TstatZItg[idxCovarTG,:]), colorbar = true, m = (:bluesreds, 0.8), 
 		colorbar_title = string("\nT-statistics of ",namesXtg),
 		xticks=collect(0:1:length(unique(dfRefTG.Total_DB))-1), clims = (-zlim2, zlim2), 
@@ -1019,20 +1029,30 @@ if (@isdefined mX)
 	
 	
 	# Generate Z matrix
-	mZdb_cat = modelmatrix(@formula(y ~ 0 + Total_DB_cat).rhs, 
+	mZdb_cat = modelmatrix(@formula(y ~ 1 + Total_DB_cat).rhs, 
 						dfRefTG₂, 
-						hints = Dict(:Total_DB_cat => StatsModels.FullDummyCoding()));
-	
+						hints = Dict(:Total_DB_cat => 
+						StatsModels.DummyCoding(;
+								base = lvls_db[1],
+								levels = lvls_db	
+						)));
+						# StatsModels.FullDummyCoding()));
+
+
+	# mZdb_cat = modelmatrix(@formula(y ~ 1 + Total_DB_cat).rhs, 
+	# 					dfRefTG₂, 
+	# 					hints = Dict(:Total_DB_cat => StatsModels.DummyCoding(base = 			levels(dfRefTG₂.Total_DB_cat)[1])));
+
 	
 	if ("(Intercept)" in vFrmlNames)
 		CoefZdb, CIZdb, TstatZdb, varZdb = getCoefs(
 			mYTG, mX, mZdb_cat; 
-			addXIntercept=false, addZIntercept= false
+			hasXIntercept=true, hasZIntercept= false
 		);
 	else 
 		CoefZdb, CIZdb, TstatZdb, varZdb = getCoefs(
 			mYTG, mX, mZdb_cat; 
-			addXIntercept=true, addZIntercept= false
+			hasXIntercept=false, hasZIntercept= false
 		);
 	end
 	
@@ -1040,6 +1060,53 @@ if (@isdefined mX)
 end
 end;
 
+
+# ╔═╡ c7fafba4-4c76-4f14-98d6-fd44fe772628
+begin 
+	# Create a DataFrame from tStats_diff and append column names from df_baseline
+	# dfTstatsZI = DataFrame(
+	# hcat(permutedims(TstatZI), names(dfY)[1:end]),
+	# vcat(["Intercept", "FishOil"], ["lipID"])
+	# );
+	
+	# Join dfTstatsZI with dfRef to add SuperClassID and SubClassID using CHEM_ID1 as the key
+	dfTstatsZI_cdb = leftjoin(
+	dfTstatsZItg, 
+	dfRefTG₂[:, [:MetaboliteID,  :Total_DB_cat]], on = :MetaboliteID
+	# dfRefTG[:, [:lipID, :Total_C_cat , :Total_DB_cat]], on = :lipID
+	)
+	
+	# Generate names for covariate figures based on indices
+	# nameCovarFig = xCovarFigTGc
+	
+	# Group data by SuperClassID
+	gdf_db = groupby(dfTstatsZI_cdb, :Total_DB_cat);
+	
+	# Calculate the mean T-statistics for each super class and create a new DataFrame
+	dfMeanTst_db = DataFrames.combine(gdf_db, Symbol(xCovarFigTGdb) => mean => Symbol(xCovarFigTGdb)) 
+	# Sort the DataFrame by SuperClassID
+	sort!(dfMeanTst_db, :Total_DB_cat);
+	
+	# Create a dot plot of T-statistics by super class
+	p_dot_db = eval(Meta.parse("@df dfTstatsZI_cdb dotplot(string.(:Total_DB_cat), :$(xCovarFigTGdb), legend = false, markersize = 4)"))
+	# Overlay a scatter plot on the dot plot with mean values
+	eval(Meta.parse("@df dfMeanTst_db scatter!(string.(:Total_DB_cat), :$(xCovarFigTGdb), legend = false, color = :orange)"))
+	# Add a horizontal line at T=0 for reference
+	hline!([0], color= :red, 
+	label = "",
+	xlabel = "Total DB category", xrotation = 45,
+	ylabel = string("T-statistics ", "Treatment"),
+	title = "T-statistics per class",
+	titlefontsize = mytitlefontsize,
+	fontfamily = myfont, grid = false,
+	)
+	
+	# Display the plot
+	plot(p_dot_db)
+end
+
+# ╔═╡ bf288513-5531-42e6-b68a-3c8ebffb1fc7
+dfMeanTst_db
 
 # ╔═╡ ce42d8b6-003e-4e5c-83ef-41372a3526b8
 begin
@@ -1104,26 +1171,74 @@ if (@isdefined mX)
 	dfRefTG₂.Total_C_cat = vcatc
 	levelsC = lvls_c
 	# Generate Z matrix
-	mZc_cat = modelmatrix(@formula(y ~ 0 + Total_C_cat).rhs, 
+	mZc_cat = modelmatrix(@formula(y ~ 1 + Total_C_cat).rhs, 
 						dfRefTG₂, 
 						hints = Dict(
-								:Total_C_cat => StatsModels.FullDummyCoding()));
+							:Total_C_cat => StatsModels.DummyCoding(;
+								base = lvls_c[1],
+								levels = lvls_c
+							)));	
+							# :Total_C_cat => StatsModels.FullDummyCoding()));
 
 	if ("(Intercept)" in vFrmlNames)
 		CoefZc, CIZc, TstatZc, varZc = getCoefs(
 			mYTG, mX, mZc_cat; 
-			addXIntercept=false, addZIntercept= false
+			hasXIntercept=true, hasZIntercept= false
 		);
 	else 
 		CoefZc, CIZc, TstatZc, varZc = getCoefs(
 			mYTG, mX, mZc_cat; 
-			addXIntercept=true, addZIntercept= false
+			hasXIntercept=false, hasZIntercept= false
 		);
 	end
 	
 	# CoefZc, CIZc, TstatZc, varZc = getCoefs(mYTG, mX, mZc_cat);
 end
 end;
+
+# ╔═╡ dc3046c8-b3e3-454b-8ea2-4b5a1780db6e
+begin 
+	# Create a DataFrame from tStats_diff and append column names from df_baseline
+	# dfTstatsZI = DataFrame(
+	# hcat(permutedims(TstatZI), names(dfY)[1:end]),
+	# vcat(["Intercept", "FishOil"], ["lipID"])
+	# );
+	
+	# Join dfTstatsZI with dfRef to add SuperClassID and SubClassID using CHEM_ID1 as the key
+	dfTstatsZI_c = leftjoin(
+	dfTstatsZItg, 
+	dfRefTG₂[:, [:MetaboliteID, :Total_C_cat, :Total_DB_cat]], on = :MetaboliteID
+	# dfRefTG[:, [:lipID, :Total_C_cat , :Total_DB_cat]], on = :lipID
+	)
+	
+	# Generate names for covariate figures based on indices
+	# nameCovarFig = xCovarFigTGc
+	
+	# Group data by SuperClassID
+	gdf_c = groupby(dfTstatsZI_c, :Total_C_cat);
+	
+	# Calculate the mean T-statistics for each super class and create a new DataFrame
+	dfMeanTst_c = DataFrames.combine(gdf_c[1:end], Symbol(xCovarFigTGc) => mean => Symbol(xCovarFigTGc)) 
+	# Sort the DataFrame by SuperClassID
+	sort!(dfMeanTst_c, :Total_C_cat);
+	
+	# Create a dot plot of T-statistics by super class
+	p_dot = eval(Meta.parse("@df dfTstatsZI_c dotplot(string.(:Total_C_cat), :$(xCovarFigTGc), legend = false, markersize = 4)"))
+	# Overlay a scatter plot on the dot plot with mean values
+	eval(Meta.parse("@df dfMeanTst_c scatter!(string.(:Total_C_cat), :$(xCovarFigTGc), legend = false, color = :orange)"))
+	# Add a horizontal line at T=0 for reference
+	hline!([0], color= :red, 
+	label = "",
+	xlabel = "Total C category", xrotation = 45,
+	ylabel = string("T-statistics ", "Treatment"),
+	title = "T-statistics per class",
+	titlefontsize = mytitlefontsize,
+	fontfamily = myfont, grid = false,
+	)
+	
+	# Display the plot
+	plot(p_dot)
+end
 
 # ╔═╡ 0e510137-2641-43a1-af41-fb1fae61ecdf
 begin
@@ -1151,13 +1266,13 @@ begin
 end
 
 # ╔═╡ 07eb16a0-68bf-4cd5-bd8c-2387497e57d6
-Plots.bar(
-	collect(freqtable(string.(vcatc))), 
-	xticks = (collect(1:5),lvls_c), 
-	rotation = 45,
-	legend = false,
-	bottom_margin = 10mm
-)
+# Plots.bar(
+# 	collect(freqtable(string.(vcatc))), 
+# 	xticks = (collect(1:5),lvls_c), 
+# 	rotation = 45,
+# 	legend = false,
+# 	bottom_margin = 10mm
+# )
 
 # ╔═╡ f77f6c00-3a8a-45f6-a3d0-801693ea6812
 md"""
@@ -1179,8 +1294,14 @@ if (@isdefined mX)
 	mZcdb_cat = modelmatrix(@formula(y ~ 1 + Total_C_cat + Total_DB_cat).rhs, 
 						dfRefTG₂, 
 						hints = Dict(
-								:Total_C_cat => StatsModels.DummyCoding(base = 			levels(dfRefTG₂.Total_C_cat)[1]),
-							    :Total_DB_cat => StatsModels.DummyCoding(base = 			levels(dfRefTG₂.Total_DB_cat)[1])));
+								:Total_C_cat => StatsModels.DummyCoding(;
+									base =	levelsC[1],
+									levels = levelsC
+								),
+							    :Total_DB_cat => StatsModels.DummyCoding(
+									base =	levelsDB[1],
+									levels = levelsDB
+									)));
 
 	levelsCdb_cat = vcat(["Intercept"], 
 						 levels(dfRefTG₂.Total_C_cat)[2:end],
@@ -1190,12 +1311,12 @@ if (@isdefined mX)
 	if ("(Intercept)" in vFrmlNames)
 		CoefZcdbcat, CIZcdbcat, TstatZcdbcat, varZcdbcat = getCoefs(
 			mYTG, mX, mZcdb_cat; 
-			addXIntercept=false, addZIntercept= false
+			hasXIntercept=true, hasZIntercept= true
 		);
 	else 
 		CoefZcdbcat, CIZcdbcat, TstatZcdbcat, varZcdbcat = getCoefs(
 			mYTG, mX, mZcdb_cat; 
-			addXIntercept=true, addZIntercept= false
+			hasXIntercept=false, hasZIntercept= false
 		);
 	end
 	
@@ -1379,7 +1500,9 @@ md"""
 """
 
 # ╔═╡ c618b2d2-d57c-48f5-bc61-8cd8620c9f81
-dfORA_tc = ora_results(pval_age, dfRefTG₂.Total_C_cat, lvls_c, dfMetTG[:,2:end], dfRefTG₂)
+begin
+	dfORA_tc = ora_results(pval_age, dfRefTG₂.Total_C_cat, lvls_c, dfMetTG[:,2:end], dfRefTG₂)
+end
 
 # ╔═╡ 01789761-11a1-452d-a658-cdc6900b15fc
 md"""
@@ -1387,7 +1510,9 @@ md"""
 """
 
 # ╔═╡ 07847e33-6651-48b4-8744-3f512459dee7
-dfORA_db = ora_results(pval_age, dfRefTG₂.Total_DB_cat, lvls_db, dfMetTG[:,2:end], dfRefTG₂)
+begin
+	dfORA_db = ora_results(pval_age, dfRefTG₂.Total_DB_cat, lvls_db, dfMetTG[:,2:end], dfRefTG₂)
+end
 
 # ╔═╡ 3f0e91f2-dcf2-46cf-a8dd-706076a59835
 begin
@@ -1427,12 +1552,12 @@ if (@isdefined mX)
 	if ("(Intercept)" in vFrmlNames)
 		CoefZcdb, CIZcdb, TstatZcdb, varZcdb = getCoefs(
 			mYTG, mX, mZcdb_cont; 
-			addXIntercept=false, addZIntercept= false
+			hasXIntercept=false, hasZIntercept= false
 		);
 	else 
 		CoefZcdb, CIZcdb, TstatZcdb, varZcdb = getCoefs(
 			mYTG, mX, mZcdb_cont; 
-			addXIntercept=true, addZIntercept= false
+			hasXIntercept=true, hasZIntercept= false
 		);
 	end
 	# CoefZcdb, CIZcdb, TstatZcdb, varZcdb = getCoefs(mYTG, mX, mZcdb_cont);
@@ -1480,14 +1605,14 @@ StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 [compat]
 CSV = "~0.10.15"
 CategoricalArrays = "~0.10.8"
-ColorSchemes = "~3.27.1"
+ColorSchemes = "~3.28.0"
 DataFrames = "~1.7.0"
 DataFramesMeta = "~0.15.4"
-Distributions = "~0.25.113"
+Distributions = "~0.25.117"
 FreqTables = "~0.4.6"
-Images = "~0.26.1"
+Images = "~0.26.2"
 Latexify = "~0.16.5"
-MatrixLM = "~0.2.1"
+MatrixLM = "~0.2.2"
 MetabolomicsWorkbenchAPI = "~0.2.0"
 Missings = "~1.2.0"
 Plots = "~1.40.7"
@@ -1504,9 +1629,9 @@ StatsPlots = "~0.15.7"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.2"
+julia_version = "1.11.3"
 manifest_format = "2.0"
-project_hash = "a4cda2f2d0513e45471d37fa75f3d69c28e16170"
+project_hash = "defffcd4285fbb75fd4056f3f9be541a26ba4aad"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1565,9 +1690,9 @@ version = "3.5.1+1"
 
 [[deps.ArrayInterface]]
 deps = ["Adapt", "LinearAlgebra"]
-git-tree-sha1 = "d5140b60b87473df18cf4fe66382b7c3596df047"
+git-tree-sha1 = "017fcb757f8e921fb44ee063a7aafe5f89b86dd1"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "7.17.1"
+version = "7.18.0"
 
     [deps.ArrayInterface.extensions]
     ArrayInterfaceBandedMatricesExt = "BandedMatrices"
@@ -1681,9 +1806,9 @@ version = "0.6.0"
 
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra"]
-git-tree-sha1 = "3e4b134270b372f2ed4d4d0e936aabaefc1802bc"
+git-tree-sha1 = "1713c74e00545bfe14605d2a2be1712de8fbcb58"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "1.25.0"
+version = "1.25.1"
 weakdeps = ["SparseArrays"]
 
     [deps.ChainRulesCore.extensions]
@@ -1697,9 +1822,9 @@ version = "0.1.13"
 
 [[deps.Clustering]]
 deps = ["Distances", "LinearAlgebra", "NearestNeighbors", "Printf", "Random", "SparseArrays", "Statistics", "StatsBase"]
-git-tree-sha1 = "9ebb045901e9bbf58767a9f34ff89831ed711aae"
+git-tree-sha1 = "3e22db924e2945282e70c33b75d4dde8bfa44c94"
 uuid = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
-version = "0.15.7"
+version = "0.15.8"
 
 [[deps.CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
@@ -1709,9 +1834,9 @@ version = "0.7.6"
 
 [[deps.ColorSchemes]]
 deps = ["ColorTypes", "ColorVectorSpace", "Colors", "FixedPointNumbers", "PrecompileTools", "Random"]
-git-tree-sha1 = "c785dfb1b3bfddd1da557e861b919819b82bbe5b"
+git-tree-sha1 = "26ec26c98ae1453c692efded2b17e15125a5bea1"
 uuid = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
-version = "3.27.1"
+version = "3.28.0"
 
 [[deps.ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
@@ -1872,9 +1997,9 @@ version = "1.11.0"
 
 [[deps.Distributions]]
 deps = ["AliasTables", "FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SpecialFunctions", "Statistics", "StatsAPI", "StatsBase", "StatsFuns"]
-git-tree-sha1 = "3101c32aab536e7a27b1763c0797dba151b899ad"
+git-tree-sha1 = "03aa5d44647eaec98e1920635cdfed5d5560a8b9"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.25.113"
+version = "0.25.117"
 
     [deps.Distributions.extensions]
     DistributionsChainRulesCoreExt = "ChainRulesCore"
@@ -1935,9 +2060,9 @@ version = "0.3.2"
 
 [[deps.FFTW]]
 deps = ["AbstractFFTs", "FFTW_jll", "LinearAlgebra", "MKL_jll", "Preferences", "Reexport"]
-git-tree-sha1 = "4820348781ae578893311153d69049a93d05f39d"
+git-tree-sha1 = "7de7c78d681078f027389e067864a8d53bd7c3c9"
 uuid = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
-version = "1.8.0"
+version = "1.8.1"
 
 [[deps.FFTW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -2054,9 +2179,9 @@ version = "9.55.0+4"
 
 [[deps.Giflib_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "0224cce99284d997f6880a42ef715a37c99338d1"
+git-tree-sha1 = "6570366d757b50fabae9f4315ad74d2e40c0560a"
 uuid = "59f7168a-df46-5410-90c8-f2779963d0ec"
-version = "5.2.2+2"
+version = "5.2.3+0"
 
 [[deps.Glib_jll]]
 deps = ["Artifacts", "Gettext_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Libiconv_jll", "Libmount_jll", "PCRE2_jll", "Zlib_jll"]
@@ -2113,9 +2238,9 @@ version = "0.1.17"
 
 [[deps.HypergeometricFunctions]]
 deps = ["LinearAlgebra", "OpenLibm_jll", "SpecialFunctions"]
-git-tree-sha1 = "b1c2585431c382e3fe5805874bda6aea90a95de9"
+git-tree-sha1 = "2bd56245074fab4015b9174f24ceba8293209053"
 uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
-version = "0.3.25"
+version = "0.3.27"
 
 [[deps.Hyperscript]]
 deps = ["Test"]
@@ -2244,9 +2369,9 @@ version = "0.10.1"
 
 [[deps.Images]]
 deps = ["Base64", "FileIO", "Graphics", "ImageAxes", "ImageBase", "ImageBinarization", "ImageContrastAdjustment", "ImageCore", "ImageCorners", "ImageDistances", "ImageFiltering", "ImageIO", "ImageMagick", "ImageMetadata", "ImageMorphology", "ImageQualityIndexes", "ImageSegmentation", "ImageShow", "ImageTransformations", "IndirectArrays", "IntegralArrays", "Random", "Reexport", "SparseArrays", "StaticArrays", "Statistics", "StatsBase", "TiledIteration"]
-git-tree-sha1 = "12fdd617c7fe25dc4a6cc804d657cc4b2230302b"
+git-tree-sha1 = "a49b96fd4a8d1a9a718dfd9cde34c154fc84fcd5"
 uuid = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
-version = "0.26.1"
+version = "0.26.2"
 
 [[deps.Imath_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2285,9 +2410,9 @@ version = "0.1.6"
 
 [[deps.IntelOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl"]
-git-tree-sha1 = "10bd689145d2c3b2a9844005d01087cc1194e79e"
+git-tree-sha1 = "0f14a5456bdc6b9731a5682f439a672750a09e48"
 uuid = "1d5cc7b8-4909-519e-a0f8-d0f5ad9712d0"
-version = "2024.2.1+0"
+version = "2025.0.4+0"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
@@ -2337,9 +2462,9 @@ version = "1.0.0"
 
 [[deps.JLD2]]
 deps = ["FileIO", "MacroTools", "Mmap", "OrderedCollections", "PrecompileTools", "Requires", "TranscodingStreams"]
-git-tree-sha1 = "f1a1c1037af2a4541ea186b26b0c0e7eeaad232b"
+git-tree-sha1 = "91d501cb908df6f134352ad73cde5efc50138279"
 uuid = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
-version = "0.5.10"
+version = "0.5.11"
 
 [[deps.JLFzf]]
 deps = ["Pipe", "REPL", "Random", "fzf_jll"]
@@ -2360,10 +2485,16 @@ uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 version = "0.21.4"
 
 [[deps.JSON3]]
-deps = ["Dates", "Mmap", "Parsers", "SnoopPrecompile", "StructTypes", "UUIDs"]
-git-tree-sha1 = "84b10656a41ef564c39d2d477d7236966d2b5683"
+deps = ["Dates", "Mmap", "Parsers", "PrecompileTools", "StructTypes", "UUIDs"]
+git-tree-sha1 = "1d322381ef7b087548321d3f878cb4c9bd8f8f9b"
 uuid = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
-version = "1.12.0"
+version = "1.14.1"
+
+    [deps.JSON3.extensions]
+    JSON3ArrowExt = ["ArrowTypes"]
+
+    [deps.JSON3.weakdeps]
+    ArrowTypes = "31f734f8-188a-4ce0-8406-c8a06bd891cd"
 
 [[deps.JpegTurbo]]
 deps = ["CEnum", "FileIO", "ImageCore", "JpegTurbo_jll", "TOML"]
@@ -2499,9 +2630,9 @@ version = "1.51.1+0"
 
 [[deps.Libiconv_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "61dfdba58e585066d8bce214c5a51eaa0539f269"
+git-tree-sha1 = "be484f5c92fad0bd8acfef35fe017900b0b73809"
 uuid = "94ce4f54-9a6c-5748-9c1c-f9c7231a4531"
-version = "1.17.0+1"
+version = "1.18.0+0"
 
 [[deps.Libmount_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2580,9 +2711,9 @@ version = "0.1.4"
 
 [[deps.MKL_jll]]
 deps = ["Artifacts", "IntelOpenMP_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "oneTBB_jll"]
-git-tree-sha1 = "f046ccd0c6db2832a9f639e2c669c6fe867e5f4f"
+git-tree-sha1 = "5de60bc6cb3899cd318d80d627560fae2e2d99ae"
 uuid = "856f044c-d86e-5d09-b602-aeab76dc8ba7"
-version = "2024.2.0+0"
+version = "2025.0.1+1"
 
 [[deps.MacroTools]]
 git-tree-sha1 = "72aebe0b5051e5143a079a4685a46da330a40472"
@@ -2606,9 +2737,9 @@ version = "1.11.0"
 
 [[deps.MatrixLM]]
 deps = ["DataFrames", "Distributed", "LinearAlgebra", "Random", "SharedArrays", "Statistics", "StatsModels"]
-git-tree-sha1 = "9fedde90823372aaaf6cf0f14b3dc5ca95ce28c0"
+git-tree-sha1 = "92d6dfd350b05c072e9cc3525c92c837c6d76679"
 uuid = "37290134-6146-11e9-0c71-a5c489be1f53"
-version = "0.2.1"
+version = "0.2.2"
 
 [[deps.MbedTLS]]
 deps = ["Dates", "MbedTLS_jll", "MozillaCACerts_jll", "NetworkOptions", "Random", "Sockets"]
@@ -2666,9 +2797,9 @@ version = "0.10.3"
 
 [[deps.NaNMath]]
 deps = ["OpenLibm_jll"]
-git-tree-sha1 = "030ea22804ef91648f29b7ad3fc15fa49d0e6e71"
+git-tree-sha1 = "fe891aea7ccd23897520db7f16931212454e277e"
 uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
-version = "1.0.3"
+version = "1.1.1"
 
 [[deps.NamedArrays]]
 deps = ["Combinatorics", "DataStructures", "DelimitedFiles", "InvertedIndices", "LinearAlgebra", "Random", "Requires", "SparseArrays", "Statistics"]
@@ -2698,9 +2829,9 @@ uuid = "510215fc-4207-5dde-b226-833fc4488ee2"
 version = "0.5.5"
 
 [[deps.OffsetArrays]]
-git-tree-sha1 = "39d000d9c33706b8364817d8894fae1548f40295"
+git-tree-sha1 = "5e1897147d1ff8d98883cda2be2187dcf57d8f0c"
 uuid = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
-version = "1.14.2"
+version = "1.15.0"
 weakdeps = ["Adapt"]
 
     [deps.OffsetArrays.extensions]
@@ -2753,10 +2884,10 @@ uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
 version = "1.1.23+1"
 
 [[deps.OpenSpecFun_jll]]
-deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "13652491f6856acfd2db29360e1bbcd4565d04f1"
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "1346c9208249809840c91b26703912dff463d335"
 uuid = "efe28fd5-8261-553b-a9e1-b2916fc3738e"
-version = "0.5.5+2"
+version = "0.5.6+0"
 
 [[deps.Opus_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2776,9 +2907,9 @@ version = "10.42.0+1"
 
 [[deps.PDMats]]
 deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
-git-tree-sha1 = "949347156c25054de2db3b166c52ac4728cbad65"
+git-tree-sha1 = "966b85253e959ea89c53a9abebbf2e964fbf593b"
 uuid = "90014a1f-27ba-587c-ab20-58faa44d9150"
-version = "0.11.31"
+version = "0.11.32"
 
 [[deps.PNGFiles]]
 deps = ["Base64", "CEnum", "ImageCore", "IndirectArrays", "OffsetArrays", "libpng_jll"]
@@ -2882,9 +3013,9 @@ version = "0.2.2"
 
 [[deps.Polynomials]]
 deps = ["LinearAlgebra", "OrderedCollections", "RecipesBase", "Requires", "Setfield", "SparseArrays"]
-git-tree-sha1 = "adc25dbd4d13f148f3256b6d4743fe7e63a71c4a"
+git-tree-sha1 = "27f6107dc202e2499f0750c628a848ce5d6e77f5"
 uuid = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
-version = "4.0.12"
+version = "4.0.13"
 
     [deps.Polynomials.extensions]
     PolynomialsChainRulesCoreExt = "ChainRulesCore"
@@ -2934,9 +3065,9 @@ uuid = "92933f4c-e287-5a05-a399-4b506db050ca"
 version = "1.10.2"
 
 [[deps.PtrArrays]]
-git-tree-sha1 = "77a42d78b6a92df47ab37e177b2deac405e1c88f"
+git-tree-sha1 = "1d36ef11a9aaf1e8b74dacc6a731dd1de8fd493d"
 uuid = "43287f4e-b6f4-7ad1-bb20-aadabca52c3d"
-version = "1.2.1"
+version = "1.3.0"
 
 [[deps.QOI]]
 deps = ["ColorTypes", "FileIO", "FixedPointNumbers"]
@@ -3062,9 +3193,9 @@ version = "0.7.0"
 
 [[deps.SIMD]]
 deps = ["PrecompileTools"]
-git-tree-sha1 = "52af86e35dd1b177d051b12681e1c581f53c281b"
+git-tree-sha1 = "fea870727142270bdf7624ad675901a1ee3b4c87"
 uuid = "fdea26ae-647d-5447-a871-4b548cad5224"
-version = "3.7.0"
+version = "3.7.1"
 
 [[deps.SIMDTypes]]
 git-tree-sha1 = "330289636fb8107c5f32088d2741e9fd7a061a5c"
@@ -3138,12 +3269,6 @@ git-tree-sha1 = "2da10356e31327c7096832eb9cd86307a50b1eb6"
 uuid = "45858cf5-a6b0-47a3-bbea-62219f50df47"
 version = "0.1.3"
 
-[[deps.SnoopPrecompile]]
-deps = ["Preferences"]
-git-tree-sha1 = "e760a70afdcd461cf01a575947738d359234665c"
-uuid = "66db9d55-30c0-4569-8b51-7e840670fc0c"
-version = "1.0.3"
-
 [[deps.Sockets]]
 uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
 version = "1.11.0"
@@ -3200,9 +3325,9 @@ weakdeps = ["OffsetArrays", "StaticArrays"]
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "PrecompileTools", "Random", "StaticArraysCore"]
-git-tree-sha1 = "777657803913ffc7e8cc20f0fd04b634f871af8f"
+git-tree-sha1 = "47091a0340a675c738b1304b58161f3b0839d454"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.9.8"
+version = "1.9.10"
 weakdeps = ["ChainRulesCore", "Statistics"]
 
     [deps.StaticArrays.extensions]
@@ -3270,9 +3395,9 @@ version = "0.4.0"
 
 [[deps.StructTypes]]
 deps = ["Dates", "UUIDs"]
-git-tree-sha1 = "ca4bccb03acf9faaf4137a9abc1881ed1841aa70"
+git-tree-sha1 = "159331b30e94d7b11379037feeb9b690950cace8"
 uuid = "856f2bd8-1eba-4b0a-8007-ebc267875bd4"
-version = "1.10.0"
+version = "1.11.0"
 
 [[deps.StyledStrings]]
 uuid = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
@@ -3340,9 +3465,9 @@ version = "0.5.2"
 
 [[deps.TiffImages]]
 deps = ["ColorTypes", "DataStructures", "DocStringExtensions", "FileIO", "FixedPointNumbers", "IndirectArrays", "Inflate", "Mmap", "OffsetArrays", "PkgVersion", "ProgressMeter", "SIMD", "UUIDs"]
-git-tree-sha1 = "0248b1b2210285652fbc67fd6ced9bf0394bcfec"
+git-tree-sha1 = "f21231b166166bebc73b99cea236071eb047525b"
 uuid = "731e570b-9d59-4bfa-96dc-6df516fadf69"
-version = "0.11.1"
+version = "0.11.3"
 
 [[deps.TiledIteration]]
 deps = ["OffsetArrays", "StaticArrayInterface"]
@@ -3356,9 +3481,9 @@ uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
 version = "0.11.3"
 
 [[deps.Tricks]]
-git-tree-sha1 = "7822b97e99a1672bfb1b49b668a6d46d58d8cbcb"
+git-tree-sha1 = "6cae795a5a9313bbb4f60683f7263318fc7d1505"
 uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
-version = "0.1.9"
+version = "0.1.10"
 
 [[deps.URIs]]
 git-tree-sha1 = "67db6cc7b3821e19ebe75791a9dd19c9b1188f2b"
@@ -3648,10 +3773,10 @@ uuid = "b53b4c65-9356-5827-b1ea-8c7a1a84506f"
 version = "1.6.45+1"
 
 [[deps.libsixel_jll]]
-deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Pkg", "libpng_jll"]
-git-tree-sha1 = "7dfa0fd9c783d3d0cc43ea1af53d69ba45c447df"
+deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "Libdl", "libpng_jll"]
+git-tree-sha1 = "c1733e347283df07689d71d61e14be986e49e47a"
 uuid = "075b6546-f08a-558a-be8f-8157d0f608a5"
-version = "1.10.3+3"
+version = "1.10.5+0"
 
 [[deps.libvorbis_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Ogg_jll", "Pkg"]
@@ -3722,7 +3847,8 @@ version = "1.4.1+2"
 # ╟─e41ff6d5-f332-4601-9092-7d182bcd76d2
 # ╟─3316f2ff-1ca2-43c3-9c59-dc352b75f9a1
 # ╟─60e617ba-4ed4-4353-9afe-61fa677319c0
-# ╟─fc95c8db-3373-4665-afa5-e79c65c0d738
+# ╠═fc95c8db-3373-4665-afa5-e79c65c0d738
+# ╠═51519392-ec6b-4324-a77e-fc9766aa80c6
 # ╟─53fc9db0-28d3-4deb-96f0-91a8e1fe6dbc
 # ╟─4d665b9d-a085-482f-b60f-670d3cc2d541
 # ╟─1cf4e218-e1e6-47ad-80a2-94fddedecb10
@@ -3754,6 +3880,7 @@ version = "1.4.1+2"
 # ╟─b9b257e4-61bf-4362-bb7f-39931ac0cc0e
 # ╟─86b5ad8d-65de-40f8-aff0-b82c1431712d
 # ╟─d0969087-77c8-410d-b2c1-6a4a6a6a316d
+# ╠═1cc0ec50-3408-4641-891a-af41f56c1025
 # ╟─47bc75f3-a8fd-4878-9dcd-5ce7151c0820
 # ╟─9020e518-ab75-4827-b7b2-d0f25c11a0dc
 # ╟─8903ef6a-eff8-4f9c-8f31-374e1e2533c0
@@ -3764,11 +3891,14 @@ version = "1.4.1+2"
 # ╟─50332a44-81c0-4b80-ab42-517b8196294b
 # ╟─63e8f438-abd0-4ee7-8121-cf557e56dc73
 # ╟─a599374a-dfd5-45b4-b7bd-9bb728872b55
+# ╠═bf288513-5531-42e6-b68a-3c8ebffb1fc7
+# ╟─c7fafba4-4c76-4f14-98d6-fd44fe772628
 # ╟─ce42d8b6-003e-4e5c-83ef-41372a3526b8
-# ╠═87f44b92-74a1-4524-b227-a93a3ac895ad
+# ╟─87f44b92-74a1-4524-b227-a93a3ac895ad
 # ╟─a46aa97d-679a-4b37-a6c0-a6c5148be92f
 # ╟─23f880c2-b334-4472-9c93-733ebdc56ecf
 # ╟─0f84687b-38b0-4302-99e6-43e3aa2c6443
+# ╟─dc3046c8-b3e3-454b-8ea2-4b5a1780db6e
 # ╟─0e510137-2641-43a1-af41-fb1fae61ecdf
 # ╟─07eb16a0-68bf-4cd5-bd8c-2387497e57d6
 # ╟─f77f6c00-3a8a-45f6-a3d0-801693ea6812

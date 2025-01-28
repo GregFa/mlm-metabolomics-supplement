@@ -287,7 +287,8 @@ getCoefsgetCoefs(
         Y::AbstractMatrix, 
         X::AbstractMatrix, 
         Zin::AbstractMatrix; 
-        zcritical = 1.96) => Array{Float,2}, Array{Float,2}, Array{Float,2}, Array{Float,2}
+        zcritical = 1.96,
+        hasXIntercept = true, hasZIntercept = true) => Array{Float,2}, Array{Float,2}, Array{Float,2}, Array{Float,2}
 
 Returns coefficients, confidence of interval, T-stats and variance.
 

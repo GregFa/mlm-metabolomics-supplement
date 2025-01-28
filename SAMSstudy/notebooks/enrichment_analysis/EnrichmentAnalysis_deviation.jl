@@ -586,7 +586,8 @@ p_tc_ci = confidenceplot(
 mZtc_cat = MatrixLM.design_matrix(
 	@mlmformula(0 + Total_C_cat),
 	dfRefTG,
-	 Dict(:Total_C_cat => StatsModels.FullDummyCoding())
+	 # Dict(:Total_C_cat => StatsModels.FullDummyCoding())
+    Dict(:Total_C_cat => StatsModels.DummyCoding())
         # StatsModels.ContrastsCoding(
         #         StatsModels.ContrastsMatrix(StatsModels.FullDummyCoding(), lvls_c).matrix, 
         #         levels = lvls_c
@@ -893,8 +894,8 @@ p_ua
 mZcdb_cat = MatrixLM.design_matrix(
 	@mlmformula(0 + Total_C_cat + Total_DB_cat),
 	dfRefTG,
-	Dict(:Total_DB_cat => StatsModels.FullDummyCoding(),
-         :Total_C_cat => StatsModels.FullDummyCoding())
+	Dict(:Total_C_cat => StatsModels.DummyCoding(),
+         :Total_DB_cat => StatsModels.FullDummyCoding())
 ) 
 
 mZcdb_cat[:, Not(9)] |> rank
@@ -1028,9 +1029,13 @@ dfORA_db = ora_results(pval_fishoil, dfRefTG.Total_DB_cat, lvls_db, dfY, dfRefTG
 
 pval_fishoil_cat_adjusted = ccdf.(TDist(sampleN-1), abs.(TstatZcdbcat[2,:])).*2
 
-dfORA_compare = vcat(dfORA_tc[1:end, :], dfORA_db[2:end, :])
+# +
+# dfORA_compare = vcat(dfORA_tc[1:end, :], dfORA_db[2:end, :])
+dfORA_compare = vcat(dfORA_tc[1:end, :], dfORA_db[1:end, :])
+
 dfORA_compare.Pval_MLM_adjusted = pval_fishoil_cat_adjusted[1:end];
 dfORA_compare
+# -
 
 pval_fishoil_db_cat_unadjusted = ccdf.(TDist(sampleN-1), abs.(TstatZdb[2,:])).*2;
 pval_fishoil_tc_cat_unadjusted = ccdf.(TDist(sampleN-1), abs.(TstatZtc[2,:])).*2;
@@ -1038,7 +1043,8 @@ pval_fishoil_tc_cat_unadjusted = ccdf.(TDist(sampleN-1), abs.(TstatZtc[2,:])).*2
 
 dfORA_compare.Pval_MLM_unadjusted = vcat(
     pval_fishoil_tc_cat_unadjusted[1:end],
-    pval_fishoil_db_cat_unadjusted[2:end]
+    # pval_fishoil_db_cat_unadjusted[2:end]
+    pval_fishoil_db_cat_unadjusted[1:end]
     )  
 
 dfORA_compare

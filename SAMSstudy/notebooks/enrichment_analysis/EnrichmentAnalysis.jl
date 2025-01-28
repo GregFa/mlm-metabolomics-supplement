@@ -52,6 +52,10 @@
 
 # ## Libraries
 
+using Pkg 
+
+Pkg.activate("../..")
+
 using CSV, DataFrames, DataFramesMeta, Missings, CategoricalArrays
 using StatsBase, Statistics, MatrixLM
 using Random, Distributions, StatsModels#, MultivariateStats
@@ -382,18 +386,82 @@ vcatc = cut(
 dfRefTG.Total_C_cat = vcatc
 namesZtc =lvls_c;
 # levelsC = lvls_c
-# Generate Z matrix
-mZtc_cat = modelmatrix(@formula(y ~ 0 + Total_C_cat).rhs, 
-                    dfRefTG, 
-                    hints = Dict(
-                            :Total_C_cat => StatsModels.FullDummyCoding()));
+
 # -
 
 lvls_c
 
+# +
+# Create a DataFrame from tStats_diff and append column names from df_baseline
+dfTstatsZI = DataFrame(
+    hcat(permutedims(TstatZI), names(dfY)[1:end]),
+    vcat(["Intercept", "FishOil"], ["lipID"])
+);
+
+# Join dfTstatsZI with dfRef to add SuperClassID and SubClassID using CHEM_ID1 as the key
+dfTstatsZI = leftjoin(
+    dfTstatsZI, 
+    dfRefTG[:, [:lipID, :Total_C_cat]], on = :lipID
+    # dfRefTG[:, [:lipID, :Total_C_cat , :Total_DB_cat]], on = :lipID
+)
+
+# Generate names for covariate figures based on indices
+nameCovarFig = "FishOil"
+
+# Group data by SuperClassID
+gdf = groupby(dfTstatsZI, :Total_C_cat);
+
+# Calculate the mean T-statistics for each super class and create a new DataFrame
+dfMeanTst = DataFrames.combine(gdf, Symbol(nameCovarFig) => mean => Symbol(nameCovarFig)) 
+# Sort the DataFrame by SuperClassID
+sort!(dfMeanTst, :Total_C_cat);
+
+# Create a dot plot of T-statistics by super class
+p_dot = eval(Meta.parse("@df dfTstatsZI dotplot(string.(:Total_C_cat), :$(nameCovarFig), legend = false, markersize = 4)"))
+# Overlay a scatter plot on the dot plot with mean values
+eval(Meta.parse("@df dfMeanTst scatter!(string.(:Total_C_cat), :$(nameCovarFig), legend = false, color = :orange)"))
+# Add a horizontal line at T=0 for reference
+hline!([0], color= :red, 
+    label = "",
+    xlabel = "Total C category", xrotation = 45,
+    ylabel = string("T-statistics ", "Treatment"),
+    title = "T-statistics per class",
+    titlefontsize = mytitlefontsize,
+    fontfamily = myfont, grid = false,
+)
+
+# Display the plot
+plot(p_dot)
+# -
+
 # Apply MLM processing:
 
-CoefZtc, CIZtc, TstatZtc, varZtc = getCoefs(mY, mX,mZtc_cat);
+# +
+# Design matrix Z
+mZtc_cat = MatrixLM.design_matrix(
+	@mlmformula(1 + Total_C_cat),
+	dfRefTG,
+	 # Dict(:Total_C_cat => StatsModels.FullDummyCoding())
+    Dict(:Total_C_cat => StatsModels.DummyCoding(;
+            base = lvls_c[1],
+            levels = lvls_c
+        )
+    )
+)
+
+
+# Generate Z matrix
+# mZtc_cat = modelmatrix(@formula(y ~ 0 + Total_C_cat).rhs, 
+#                     dfRefTG, 
+#                     hints = Dict(
+#                             :Total_C_cat => StatsModels.FullDummyCoding()));
+# mZtc_cat |> x -> hcat(Matrix(dfRefTG[:, [:Total_C_cat]]), x) 
+
+CoefZtc, CIZtc, TstatZtc, varZtc = getCoefs(
+    mY, mX,mZtc_cat; 
+    hasXIntercept = true, hasZIntercept = true
+);
+# -
 
 # Plot results:
 
@@ -432,13 +500,72 @@ dfRefTG.Total_DB_cat = vcatdb
 
 namesZdb = lvls_db;
 
-# Generate Z matrix
-mZdb_cat = modelmatrix(@formula(y ~ 0 + Total_DB_cat).rhs, 
-                    dfRefTG, 
-                    hints = Dict(:Total_DB_cat => StatsModels.FullDummyCoding()));
-# -
 
-CoefZdb, CIZdb, TstatZdb, varZdb = getCoefs(mY, mX,mZdb_cat);
+
+# +
+# Create a DataFrame from tStats_diff and append column names from df_baseline
+dfTstatsZI = DataFrame(
+    hcat(permutedims(TstatZI), names(dfY)[1:end]),
+    vcat(["Intercept", "FishOil"], ["lipID"])
+);
+
+# Join dfTstatsZI with dfRef to add SuperClassID and SubClassID using CHEM_ID1 as the key
+dfTstatsZI = leftjoin(
+    dfTstatsZI, 
+    dfRefTG[:, [:lipID, :Total_DB_cat]], on = :lipID
+    # dfRefTG[:, [:lipID, :Total_C_cat , :Total_DB_cat]], on = :lipID
+)
+
+# Generate names for covariate figures based on indices
+nameCovarFig = "FishOil"
+
+# Group data by SuperClassID
+gdf = groupby(dfTstatsZI, :Total_DB_cat);
+
+# Calculate the mean T-statistics for each super class and create a new DataFrame
+dfMeanTst = DataFrames.combine(gdf, Symbol(nameCovarFig) => mean => Symbol(nameCovarFig)) 
+# Sort the DataFrame by SuperClassID
+sort!(dfMeanTst, :Total_DB_cat);
+
+# Create a dot plot of T-statistics by super class
+p_dot = eval(Meta.parse("@df dfTstatsZI dotplot(string.(:Total_DB_cat), :$(nameCovarFig), legend = false, markersize = 4)"))
+# Overlay a scatter plot on the dot plot with mean values
+eval(Meta.parse("@df dfMeanTst scatter!(string.(:Total_DB_cat), :$(nameCovarFig), legend = false, color = :orange)"))
+# Add a horizontal line at T=0 for reference
+hline!([0], color= :red, 
+    label = "",
+    xlabel = "Total DB category", xrotation = 45,
+    ylabel = string("T-statistics ", "Treatment"),
+    title = "T-statistics per class",
+    titlefontsize = mytitlefontsize,
+    fontfamily = myfont, grid = false,
+)
+
+# Display the plot
+plot(p_dot)
+
+# +
+# Design matrix Z
+mZdb_cat = MatrixLM.design_matrix(
+	@mlmformula(1 + Total_DB_cat),
+	dfRefTG,
+	 # Dict(:Total_C_cat => StatsModels.FullDummyCoding())
+    Dict(:Total_DB_cat => StatsModels.DummyCoding(;
+            base = lvls_db[1],
+            levels = lvls_db
+        )
+    )
+)
+
+# mZdb_cat = modelmatrix(@formula(y ~ 0 + Total_DB_cat).rhs, 
+#                     dfRefTG, 
+#                     hints = Dict(:Total_DB_cat => StatsModels.FullDummyCoding()));
+
+CoefZdb, CIZdb, TstatZdb, varZdb  = getCoefs(
+    mY, mX,mZdb_cat; 
+    hasXIntercept = true, hasZIntercept = true
+);
+# -
 
 idx = 1
 idxColXmatCI = idxColXmat;
@@ -456,20 +583,49 @@ p_db_ci = confidenceplot(
 # ### Adjusted 
 
 # +
-mZcdb_cat = modelmatrix(@formula(y ~ 1 + Total_C_cat + Total_DB_cat).rhs, 
-                    dfRefTG, 
-                    hints = Dict(
-                            :Total_C_cat => StatsModels.DummyCoding(base = levels(dfRefTG.Total_C_cat)[1]),
-                            :Total_DB_cat => StatsModels.DummyCoding(base = levels(dfRefTG.Total_DB_cat)[1])));
+# Design matrix Z
 
-levelsCdb_cat = vcat(["Intercept"], 
-                     levels(dfRefTG.Total_C_cat)[2:end],
-                     levels(dfRefTG.Total_DB_cat)[2:end])
+levelsCdb_cat = vcat(
+    ["Intercept"], 
+    lvls_c[2:end],
+    lvls_db[2:end]
+)
+
+mZcdb_cat = MatrixLM.design_matrix(
+	@mlmformula(1 + Total_C_cat + Total_DB_cat),
+	dfRefTG,
+    Dict(
+       :Total_DB_cat => StatsModels.DummyCoding(;
+            base = lvls_db[1],
+            levels = lvls_db
+        ),
+        :Total_C_cat => StatsModels.DummyCoding(;
+            base = lvls_c[1],
+            levels = lvls_c
+        )
+    )
+) 
+
+# mZcdb_cat = modelmatrix(
+#     @formula(y ~ 1 + Total_C_cat + Total_DB_cat).rhs, 
+#     dfRefTG, 
+#     hints = Dict(
+#         :Total_C_cat => StatsModels.DummyCoding(;
+#             base = lvls_c[1],
+#             levels = lvls_c
+#             ),
+#         :Total_DB_cat => StatsModels.DummyCoding(;
+#             base = lvls_db[1],
+#             levels = lvls_db
+#             )
+#         )
+# );
 
 
-
-CoefZcdbcat, CIZcdbcat, TstatZcdbcat, varZcdbcat = getCoefs(mY, mX, mZcdb_cat);
-
+CoefZcdbcat, CIZcdbcat, TstatZcdbcat, varZcdbcat = getCoefs(
+    mY, mX, mZcdb_cat;
+    hasXIntercept = true, hasZIntercept = true
+);
 # -
 
 # Join unadjusted results
@@ -477,7 +633,7 @@ namesZtcdb = vcat(namesZtc[2:end], namesZdb[2:end])
 CoefZtcdb  = hcat(CoefZtc[:, 2:end] , CoefZdb[:, 2:end])
 CIZtcdb    = hcat(CIZtc[:, 2:end] , CIZdb[:, 2:end])
 TstatZtcdb = hcat(TstatZtc[:, 2:end] , TstatZdb[:, 2:end])
-varZtcdb   = hcat(varZtc[:, 2:end] , varZdb[:, 2:end])
+varZtcdb   = hcat(varZtc[:, 2:end] , varZdb[:, 2:end]);
 
 # +
 idx = 1
