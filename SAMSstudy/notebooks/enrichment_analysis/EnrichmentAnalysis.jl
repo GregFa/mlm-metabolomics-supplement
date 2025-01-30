@@ -191,7 +191,7 @@ contrasts_sams = Dict(
             :FishOil => EffectsCoding(base = sort(unique(dfInd.FishOil))[1]),
 )
 
-frml_sams = "1 +  FishOil"
+frml_sams = "1 +  FishOil +Group"
 formulaX = eval(Meta.parse(string("@formula(0 ~ ", frml_sams, ").rhs")))
 
 
@@ -395,7 +395,7 @@ lvls_c
 # Create a DataFrame from tStats_diff and append column names from df_baseline
 dfTstatsZI = DataFrame(
     hcat(permutedims(TstatZI), names(dfY)[1:end]),
-    vcat(["Intercept", "FishOil"], ["lipID"])
+    vcat(["Intercept", "FishOil", "Group"], ["lipID"])
 );
 
 # Join dfTstatsZI with dfRef to add SuperClassID and SubClassID using CHEM_ID1 as the key
@@ -506,7 +506,7 @@ namesZdb = lvls_db;
 # Create a DataFrame from tStats_diff and append column names from df_baseline
 dfTstatsZI = DataFrame(
     hcat(permutedims(TstatZI), names(dfY)[1:end]),
-    vcat(["Intercept", "FishOil"], ["lipID"])
+    vcat(["Intercept", "FishOil", "Group"], ["lipID"])
 );
 
 # Join dfTstatsZI with dfRef to add SuperClassID and SubClassID using CHEM_ID1 as the key
@@ -765,6 +765,10 @@ dfORA_compare.Pval_MLM_unadjusted = vcat(
     )  
 
 dfORA_compare
+
+
+
+
 
 
 

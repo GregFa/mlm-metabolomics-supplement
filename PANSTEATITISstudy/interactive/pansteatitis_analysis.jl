@@ -311,9 +311,6 @@ begin
 	latexify(dfFreq_sub; env=:mdtable, latex=false)
 end
 
-# ╔═╡ 51519392-ec6b-4324-a77e-fc9766aa80c6
-unique(dfRef.sub_class)
-
 # ╔═╡ 53fc9db0-28d3-4deb-96f0-91a8e1fe6dbc
 md"""
 ## Modeling Decision
@@ -650,7 +647,7 @@ begin
 			xlabel = xCovarFig_sp*" Effect Size", 
 			legend = false,
 			
-			  )
+		)
 		
 		savefig(string(
 			"../images/pansteatitis_mlmCI_",
@@ -807,7 +804,7 @@ begin
 		    xlabel = xCovarFig_sb*" Effect Size", legend = false,
 		    fontfamily = myfont,
 			titlefontsize = mytitlefontsize,
-			   )
+		)
 
 		savefig(string(
 			"../images/pansteatitis_mlmCI_",
@@ -832,8 +829,50 @@ if (@isdefined mX)
 end
 end
 
-# ╔═╡ 1cc0ec50-3408-4641-891a-af41f56c1025
-dfFreq_sub.:("Sub Class")[idx_sub]
+# ╔═╡ 34449f78-6a79-475d-b2cd-ba2beab31ee9
+# begin
+# 	l2 = @layout [a b]
+# 	psp_2 = confidenceplot(
+# 		vec(permutedims(CoefZsp[idxCovarsup, Not(idx2rmvsup)])), 
+# 		levelsSup[Not(idx2rmvsup)],
+# 		vec(permutedims(CIZsp[idxCovarsup, Not(idx2rmvsup)])),
+# 		fontfamily = "Helvetica",
+# 		titlefontsize = mytitlefontsize,
+# 		xlabel = xCovarFig_sp*" Effect Size\n (a)", 
+# 		legend = false,
+		
+# 	)
+	
+# 	psb_2 = confidenceplot(
+# 		vec(permutedims(CoefZsb[idxCovarsub, Not(idx_NA_sub)])),#,idxpan])), 
+# 		dfFreq_sub.:("Sub Class")[idx_sub],
+# 		# levelsSub[idxpan],
+# 		vec(permutedims(CIZsb[idxCovarsub, Not(idx_NA_sub)])),# idxpan])),
+# 		xlabel = xCovarFig_sb*" Effect Size\n (b)", legend = false,
+# 		fontfamily = myfont,
+# 		titlefontsize = mytitlefontsize,
+# 		bottommargin = (5,:mm)
+# 	)
+	
+# 	p_test1= plot(psb_2, psp_2, layout = l2, size = (750, 450)) 
+
+# 			savefig(string(
+# 			"../images/ptest1",
+# 			".svg")
+# 		)
+
+# 	plot(p_test1)
+
+
+# 	p_test2= plot(psp_2, psb_2, layout = l2, size = (750, 440)) 
+
+# 	savefig(string(
+# 			"../images/ptest2",
+# 			".svg")
+# 		)
+
+# 	plot(p_test2)
+# end
 
 # ╔═╡ 47bc75f3-a8fd-4878-9dcd-5ce7151c0820
 md"""
@@ -1047,7 +1086,7 @@ if (@isdefined mX)
 	if ("(Intercept)" in vFrmlNames)
 		CoefZdb, CIZdb, TstatZdb, varZdb = getCoefs(
 			mYTG, mX, mZdb_cat; 
-			hasXIntercept=true, hasZIntercept= false
+			hasXIntercept=true, hasZIntercept= true
 		);
 	else 
 		CoefZdb, CIZdb, TstatZdb, varZdb = getCoefs(
@@ -1104,9 +1143,6 @@ begin
 	# Display the plot
 	plot(p_dot_db)
 end
-
-# ╔═╡ bf288513-5531-42e6-b68a-3c8ebffb1fc7
-dfMeanTst_db
 
 # ╔═╡ ce42d8b6-003e-4e5c-83ef-41372a3526b8
 begin
@@ -1183,7 +1219,7 @@ if (@isdefined mX)
 	if ("(Intercept)" in vFrmlNames)
 		CoefZc, CIZc, TstatZc, varZc = getCoefs(
 			mYTG, mX, mZc_cat; 
-			hasXIntercept=true, hasZIntercept= false
+			hasXIntercept=true, hasZIntercept= true
 		);
 	else 
 		CoefZc, CIZc, TstatZc, varZc = getCoefs(
@@ -3847,8 +3883,7 @@ version = "1.4.1+2"
 # ╟─e41ff6d5-f332-4601-9092-7d182bcd76d2
 # ╟─3316f2ff-1ca2-43c3-9c59-dc352b75f9a1
 # ╟─60e617ba-4ed4-4353-9afe-61fa677319c0
-# ╠═fc95c8db-3373-4665-afa5-e79c65c0d738
-# ╠═51519392-ec6b-4324-a77e-fc9766aa80c6
+# ╟─fc95c8db-3373-4665-afa5-e79c65c0d738
 # ╟─53fc9db0-28d3-4deb-96f0-91a8e1fe6dbc
 # ╟─4d665b9d-a085-482f-b60f-670d3cc2d541
 # ╟─1cf4e218-e1e6-47ad-80a2-94fddedecb10
@@ -3880,7 +3915,7 @@ version = "1.4.1+2"
 # ╟─b9b257e4-61bf-4362-bb7f-39931ac0cc0e
 # ╟─86b5ad8d-65de-40f8-aff0-b82c1431712d
 # ╟─d0969087-77c8-410d-b2c1-6a4a6a6a316d
-# ╠═1cc0ec50-3408-4641-891a-af41f56c1025
+# ╟─34449f78-6a79-475d-b2cd-ba2beab31ee9
 # ╟─47bc75f3-a8fd-4878-9dcd-5ce7151c0820
 # ╟─9020e518-ab75-4827-b7b2-d0f25c11a0dc
 # ╟─8903ef6a-eff8-4f9c-8f31-374e1e2533c0
@@ -3891,7 +3926,6 @@ version = "1.4.1+2"
 # ╟─50332a44-81c0-4b80-ab42-517b8196294b
 # ╟─63e8f438-abd0-4ee7-8121-cf557e56dc73
 # ╟─a599374a-dfd5-45b4-b7bd-9bb728872b55
-# ╠═bf288513-5531-42e6-b68a-3c8ebffb1fc7
 # ╟─c7fafba4-4c76-4f14-98d6-fd44fe772628
 # ╟─ce42d8b6-003e-4e5c-83ef-41372a3526b8
 # ╟─87f44b92-74a1-4524-b227-a93a3ac895ad
