@@ -22,6 +22,13 @@ This repository offers a comprehensive suite of tools and notebooks for preproce
 
 Each study is organized into its own folder, containing detailed outlines and descriptions of the code used to process the corresponding metabolomics data.
 
+### Notes for R Users  
+We provide a Jupyter notebook along with an R Markdown file demonstrating how to use the **MatrixLM.jl** package from Julia within R.  
+
+- [**MatrixLM Usage in R**](https://github.com/senresearch/mlm-metabolomics-supplement/tree/main/Example_in_R/MatrixLM_in_R_juliaconnectoR.ipynb)  
+
+This example illustrates how to integrate Julia into R workflows using **JuliaConnectoR**, enabling seamless interaction between the two languages.
+
 ### References:
 
 - Liang, J. W., Nichols, R. J., & Sen, Ś. (2019). Matrix linear models for high-throughput chemical genetic screens. Genetics, 212(4), 1063–1073. doi: [10.1534/genetics.119.302299.](https://academic.oup.com/genetics/article/212/4/1063/5931246)

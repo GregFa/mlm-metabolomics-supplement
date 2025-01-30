@@ -56,6 +56,10 @@ using Pkg
 
 Pkg.activate("../..")
 
+# Pkg.instantiate()
+# Pkg.update()
+Pkg.resolve()
+
 using CSV, DataFrames, DataFramesMeta, Missings, CategoricalArrays
 using StatsBase, Statistics, MatrixLM
 using Random, Distributions, StatsModels#, MultivariateStats
@@ -191,7 +195,7 @@ contrasts_sams = Dict(
             :FishOil => EffectsCoding(base = sort(unique(dfInd.FishOil))[1]),
 )
 
-frml_sams = "1 +  FishOil +Group"
+frml_sams = "1 +  FishOil"
 formulaX = eval(Meta.parse(string("@formula(0 ~ ", frml_sams, ").rhs")))
 
 
@@ -257,6 +261,10 @@ Y = mY;
 
 # ### Matrix Linear Model with Z=I 
 
+TstatZI
+
+# ### X matrix (individual characteristics)
+
 # +
 # Select X design model
 # if is4ways is true, covariates are
@@ -267,7 +275,7 @@ is4ways = false;
 
 # ZI is identity matrix 
 ZI = convert(Array{Float64, }, collect(I(m)));
-CoefZI, CIZI, TstatZI, varZI = getCoefs(mY, mX,ZI);
+CoefZI, CIZI, TstatZI, varZI = getCoefs(mY, mX,ZI; hasXIntercept = true, hasZIntercept = false);
 
 # CoefZI, CIZI, TstatZI, varZI = getCoefs(df, ZI, responseSelection = dfZraw.lipID,
 #                                  isunpaired = isunpairFlag, 
@@ -308,8 +316,6 @@ CoefZI, CIZI, TstatZI, varZI = getCoefs(mY, mX,ZI);
 namesX = vCovarNames
 # -
 
-# ### X matrix (individual characteristics)
-
 # We assigned a Group-value of 1 to patients in the CS group and -1 to those in the CN group. Similarly, we use a FishOil-value of 1 to indicate that a patient is taking a fish oil supplement, and -1 to indicate that they are not taking one.
 
 DataFrame(X, vCovarNames) |> (x->first(x, 3))
@@ -345,6 +351,9 @@ vCovarNames
 
 # slct1 = covarSelection[3][1];
 idxColXmat = 2 #parse(Int64,slct1);
+# idxColXmat = 1
+
+TstatZI
 
 a = 0.25
 zlim2 = maximum(abs.(TstatZI[idxColXmat,:]))
@@ -366,6 +375,85 @@ p_scatter = scatter(
 #
 # We modeled the MLM according to the length of Carbon chain and the degree of unstaturation of the Triglycerides.
 
+"""
+    deviation_contrast_matrix(k::Integer, ref::Integer)
+
+Constructs a deviation contrast matrix for a given number of levels `k` 
+and a specified reference level `ref`.
+
+# Arguments
+- `k::Integer`: The total number of levels (columns in the resulting matrix).
+- `ref::Integer`: The reference level (row in the matrix where `-1` is inserted).
+
+# Returns
+- A matrix of size `k×(k-1)` where:
+  - All columns form an identity matrix (of size `(k-1)x(k-1)`),
+  - A row of `-1` is added at the reference level.
+
+# Example
+```julia
+julia> deviation_contrast_matrix(4, 2)
+4×3 Matrix{Float64}:
+  1.0   0.0   0.0
+ -1.0  -1.0  -1.0
+  0.0   1.0   0.0
+  0.0   0.0   1.0
+"""
+function deviation_contrast_matrix(k::Integer, ref::Integer)
+    mat = Matrix(1.0I, k-1, k-1)    
+    if ref == 1
+        return vcat(-1*ones(Int, 1, k-1), mat)
+    elseif ref == k
+        return vcat(mat , -1*ones(Int, 1, k-1))
+    else
+        return vcat(
+            mat[1:(ref-1), :],
+            -1*ones(Int, 1, k-1),
+            mat[(ref):end, :]
+        )     
+    end 
+end
+
+function getCoefs_deviation(Y::AbstractMatrix, X::AbstractMatrix, Zin::AbstractMatrix; 
+    zcritical = 1.96, hasXIntercept = true, hasZIntercept = true)
+
+    ##########
+    # Step 1 #
+    ##########
+
+    CoefZtc, CIZtc, TstatZtc, varZtc = getCoefs(
+        Y, X,Zin;
+        zcritical = zcritical, hasXIntercept = hasXIntercept, hasZIntercept = hasZIntercept
+    );
+    
+   
+    
+    #########
+    # MODEL #
+    #########
+    
+    # Construct a RawData object
+    dat = RawData(Response(Y), Predictors(X,Zin, hasXIntercept, hasZIntercept));
+
+    # Estimate coefficients
+    # est = mlm(dat, hasXIntercept = false, hasZIntercept = false); # v. 0.1.3
+    est = mlm(dat, addXIntercept = hasXIntercept, addZIntercept = hasZIntercept);
+   
+    # get estimate
+    estCoefOut = MatrixLM.coef(est);
+
+    # get variance estimate
+    σ² = est.varB
+    # get SE
+    SE = sqrt.(σ²)
+    CIOut = SE.*zcritical
+    
+    # get T-statistics
+    tStatsOut = t_stat(est)
+    
+    return estCoefOut, CIOut, tStatsOut, σ² 
+end
+
 # ### Total Carbon 
 
 # Build the Z matrix based on carbon chain length:
@@ -385,8 +473,6 @@ vcatc = cut(
 
 dfRefTG.Total_C_cat = vcatc
 namesZtc =lvls_c;
-# levelsC = lvls_c
-
 # -
 
 lvls_c
@@ -395,7 +481,7 @@ lvls_c
 # Create a DataFrame from tStats_diff and append column names from df_baseline
 dfTstatsZI = DataFrame(
     hcat(permutedims(TstatZI), names(dfY)[1:end]),
-    vcat(["Intercept", "FishOil", "Group"], ["lipID"])
+    vcat(["Intercept", "FishOil"], ["lipID"])
 );
 
 # Join dfTstatsZI with dfRef to add SuperClassID and SubClassID using CHEM_ID1 as the key
@@ -434,6 +520,8 @@ hline!([0], color= :red,
 plot(p_dot)
 # -
 
+# #### Deviation coding 
+
 # Apply MLM processing:
 
 # +
@@ -441,29 +529,75 @@ plot(p_dot)
 mZtc_cat = MatrixLM.design_matrix(
 	@mlmformula(1 + Total_C_cat),
 	dfRefTG,
-	 # Dict(:Total_C_cat => StatsModels.FullDummyCoding())
-    Dict(:Total_C_cat => StatsModels.DummyCoding(;
-            base = lvls_c[1],
-            levels = lvls_c
+	 Dict(:Total_C_cat => StatsModels.ContrastsCoding(
+                deviation_contrast_matrix(length(lvls_c), 1), 
+                levels = lvls_c
+                )
         )
-    )
-)
+) 
+CoefZtc, CIZtc, TstatZtc, varZtc = getCoefs(mY, mX,mZtc_cat; hasXIntercept = true, hasZIntercept = true);
 
-
-# Generate Z matrix
-# mZtc_cat = modelmatrix(@formula(y ~ 0 + Total_C_cat).rhs, 
-#                     dfRefTG, 
-#                     hints = Dict(
-#                             :Total_C_cat => StatsModels.FullDummyCoding()));
 # mZtc_cat |> x -> hcat(Matrix(dfRefTG[:, [:Total_C_cat]]), x) 
 
-CoefZtc, CIZtc, TstatZtc, varZtc = getCoefs(
-    mY, mX,mZtc_cat; 
-    hasXIntercept = true, hasZIntercept = true
-);
+# Design matrix Z
+mZtc_cat = MatrixLM.design_matrix(
+	@mlmformula(1 + Total_C_cat),
+	dfRefTG,
+	 Dict(:Total_C_cat => StatsModels.ContrastsCoding(
+                deviation_contrast_matrix(length(lvls_c), length(lvls_c)), 
+                levels = lvls_c
+                )
+        )
+) 
+CoefZtc_a, CIZtc_a, TstatZtc_a, varZtc_a = getCoefs(mY, mX,mZtc_cat; hasXIntercept = true, hasZIntercept = true);
+# mZtc_cat |> x -> hcat(Matrix(dfRefTG[:, [:Total_C_cat]]), x) 
+
+# merge results such that all categories are represented
+CoefZtc[:,1] = CoefZtc_a[:, 2];
+CIZtc[:, 1] = CIZtc_a[:, 2]
+TstatZtc[:, 1] = TstatZtc_a[:, 2]
+varZtc[:, 1] = varZtc_a[:, 2]
+
+# +
+# CoefZtc, CIZtc, TstatZtc, varZtc = getCoefs(mY, mX,mZtc_cat);
 # -
 
 # Plot results:
+
+idx = 1
+idxColXmatCI = idxColXmat;
+p_tc_ci = confidenceplot(
+        CoefZtc[idxColXmatCI, idx:end],
+        namesZtc[idx:end],
+        CIZtc[idxColXmatCI,idx:end],
+        xlabel = namesX[idxColXmatCI]*" Effect Size", legend = false,
+        fontfamily = myfont,
+        title = string("Confidence interval for \n the ", "carbon count") , 
+        titlefontsize = mytitlefontsize,
+        size=(400,300),  
+)
+
+# #### Full Dummy coding 
+
+# Apply MLM processing:
+
+# +
+# Design matrix Z
+mZtc_cat = MatrixLM.design_matrix(
+	@mlmformula(0 + Total_C_cat),
+	dfRefTG,
+	 # Dict(:Total_C_cat => StatsModels.FullDummyCoding())
+    Dict(:Total_C_cat => StatsModels.DummyCoding())
+        # StatsModels.ContrastsCoding(
+        #         StatsModels.ContrastsMatrix(StatsModels.FullDummyCoding(), lvls_c).matrix, 
+        #         levels = lvls_c
+        #         )
+        # )
+) 
+# mZtc_cat |> x -> hcat(Matrix(dfRefTG[:, [:Total_C_cat]]), x) 
+
+CoefZtc, CIZtc, TstatZtc, varZtc = getCoefs(mY, mX,mZtc_cat; hasXIntercept = true, hasZIntercept = false);
+# -
 
 idx = 1
 idxColXmatCI = idxColXmat;
@@ -500,13 +634,16 @@ dfRefTG.Total_DB_cat = vcatdb
 
 namesZdb = lvls_db;
 
-
+# Generate Z matrix
+mZdb_cat = modelmatrix(@formula(y ~ 0 + Total_DB_cat).rhs, 
+                    dfRefTG, 
+                    hints = Dict(:Total_DB_cat => StatsModels.FullDummyCoding()));
 
 # +
 # Create a DataFrame from tStats_diff and append column names from df_baseline
 dfTstatsZI = DataFrame(
     hcat(permutedims(TstatZI), names(dfY)[1:end]),
-    vcat(["Intercept", "FishOil", "Group"], ["lipID"])
+    vcat(["Intercept", "FishOil"], ["lipID"])
 );
 
 # Join dfTstatsZI with dfRef to add SuperClassID and SubClassID using CHEM_ID1 as the key
@@ -543,29 +680,70 @@ hline!([0], color= :red,
 
 # Display the plot
 plot(p_dot)
+# -
+
+# #### Deviation coding 
 
 # +
 # Design matrix Z
 mZdb_cat = MatrixLM.design_matrix(
 	@mlmformula(1 + Total_DB_cat),
 	dfRefTG,
-	 # Dict(:Total_C_cat => StatsModels.FullDummyCoding())
-    Dict(:Total_DB_cat => StatsModels.DummyCoding(;
-            base = lvls_db[1],
-            levels = lvls_db
+	 Dict(:Total_DB_cat => StatsModels.ContrastsCoding(
+                deviation_contrast_matrix(length(lvls_db), 1), 
+                levels = lvls_db
+                )
         )
-    )
+) 
+CoefZdb, CIZdb, TstatZdb, varZdb  = getCoefs(mY, mX,mZdb_cat; hasXIntercept = true, hasZIntercept = true);
+
+# Design matrix Z
+mZdb_cat = MatrixLM.design_matrix(
+	@mlmformula(1 + Total_DB_cat),
+	dfRefTG,
+	 Dict(:Total_DB_cat => StatsModels.ContrastsCoding(
+                deviation_contrast_matrix(length(lvls_db), length(lvls_db)), 
+                levels = lvls_db
+                )
+        )
+) 
+# mZtc_cat |> x -> hcat(Matrix(dfRefTG[:, [:Total_C_cat]]), x)
+
+CoefZdb_a, CIZdb_a, TstatZdb_a, varZdb_a  = getCoefs(mY, mX,mZdb_cat; hasXIntercept = true, hasZIntercept = true);
+
+# merge results such that all categories are represented
+CoefZdb[:,1] = CoefZdb_a[:, 2];
+CIZdb[:, 1] = CIZdb_a[:, 2]
+TstatZdb[:, 1] = TstatZdb_a[:, 2]
+varZdb[:, 1] = varZdb_a[:, 2]
+# -
+
+idx = 1
+idxColXmatCI = idxColXmat;
+p_db_ci = confidenceplot(
+        CoefZdb[idxColXmatCI, idx:end],
+        namesZdb[idx:end],
+        CIZdb[idxColXmatCI,idx:end],
+        xlabel = namesX[idxColXmatCI]*" Effect Size", legend = false,
+        fontfamily = myfont,
+        title = string("Confidence interval for \n the ", "double bonds") , 
+        titlefontsize = mytitlefontsize,
+        size=(400,300), 
 )
 
-# mZdb_cat = modelmatrix(@formula(y ~ 0 + Total_DB_cat).rhs, 
-#                     dfRefTG, 
-#                     hints = Dict(:Total_DB_cat => StatsModels.FullDummyCoding()));
+# #### Full Dummy coding 
 
-CoefZdb, CIZdb, TstatZdb, varZdb  = getCoefs(
-    mY, mX,mZdb_cat; 
-    hasXIntercept = true, hasZIntercept = true
-);
-# -
+# Apply MLM processing:
+
+# Design matrix Z
+mZdb_cat = MatrixLM.design_matrix(
+	@mlmformula(0 + Total_DB_cat),
+	dfRefTG,
+	Dict(:Total_DB_cat => StatsModels.FullDummyCoding())
+) 
+CoefZdb, CIZdb, TstatZdb, varZdb  = getCoefs(mY, mX,mZdb_cat; hasXIntercept = true, hasZIntercept = false);
+
+CoefZdb
 
 idx = 1
 idxColXmatCI = idxColXmat;
@@ -582,58 +760,95 @@ p_db_ci = confidenceplot(
 
 # ### Adjusted 
 
+# #### Deviation coding 
+
+# Apply MLM processing:
+
 # +
 # Design matrix Z
-
-levelsCdb_cat = vcat(
-    ["Intercept"], 
-    lvls_c[2:end],
-    lvls_db[2:end]
-)
-
 mZcdb_cat = MatrixLM.design_matrix(
 	@mlmformula(1 + Total_C_cat + Total_DB_cat),
 	dfRefTG,
-    Dict(
-       :Total_DB_cat => StatsModels.DummyCoding(;
-            base = lvls_db[1],
-            levels = lvls_db
-        ),
-        :Total_C_cat => StatsModels.DummyCoding(;
-            base = lvls_c[1],
-            levels = lvls_c
+	 Dict(
+        :Total_C_cat => StatsModels.ContrastsCoding(
+                deviation_contrast_matrix(length(lvls_c), 1), 
+                levels = lvls_c
+                ),
+        
+        :Total_DB_cat => StatsModels.ContrastsCoding(
+                deviation_contrast_matrix(length(lvls_db), length(lvls_db)), 
+                levels = lvls_db
+                )
         )
-    )
 ) 
 
-# mZcdb_cat = modelmatrix(
-#     @formula(y ~ 1 + Total_C_cat + Total_DB_cat).rhs, 
-#     dfRefTG, 
-#     hints = Dict(
-#         :Total_C_cat => StatsModels.DummyCoding(;
-#             base = lvls_c[1],
-#             levels = lvls_c
-#             ),
-#         :Total_DB_cat => StatsModels.DummyCoding(;
-#             base = lvls_db[1],
-#             levels = lvls_db
-#             )
-#         )
-# );
+CoefZcdbcat, CIZcdbcat, TstatZcdbcat, varZcdbcat  = getCoefs(mY, mX, mZcdb_cat; hasXIntercept = true, hasZIntercept = true);
+
+# Design matrix Z
+mZcdb_cat = MatrixLM.design_matrix(
+	@mlmformula(1 + Total_C_cat + Total_DB_cat),
+	dfRefTG,
+	 Dict(
+        :Total_C_cat => StatsModels.ContrastsCoding(
+                deviation_contrast_matrix(length(lvls_c), length(lvls_c)), 
+                levels = lvls_c
+                ),
+        
+        :Total_DB_cat => StatsModels.ContrastsCoding(
+                deviation_contrast_matrix(length(lvls_db), 1), 
+                levels = lvls_db
+                )
+        )
+) 
+
+CoefZcdbcat_a, CIZcdbcat_a, TstatZcdbcat_a, varZcdbcat_a  = getCoefs(mY, mX, mZcdb_cat; hasXIntercept = true, hasZIntercept = true);
+
+# merge results such that all categories are represented
+CoefZcdbcat[:, 1] = CoefZcdbcat_a[:, 2]
+CoefZcdbcat = hcat(CoefZcdbcat, CoefZcdbcat_a[:,end]) 
+
+CIZcdbcat[:, 1] = CIZcdbcat_a[:, 2]
+CIZcdbcat = hcat(CIZcdbcat, CIZcdbcat_a[:,end]) 
+
+TstatZcdbcat[:, 1] = TstatZcdbcat_a[:, 2]
+TstatZcdbcat = hcat(TstatZcdbcat, TstatZcdbcat_a[:,end]) 
+
+varZcdbcat[:, 1] = varZcdbcat_a[:, 2]
+varZcdbcat = hcat(varZcdbcat, varZcdbcat_a[:,end]);
+
+# +
+# mZcdb_cat = modelmatrix(@formula(y ~ 1 + Total_C_cat + Total_DB_cat).rhs, 
+#                     dfRefTG, 
+#                     hints = Dict(
+#                             :Total_C_cat => StatsModels.DummyCoding(base = levels(dfRefTG.Total_C_cat)[1]),
+#                             :Total_DB_cat => StatsModels.DummyCoding(base = levels(dfRefTG.Total_DB_cat)[1])));
+
+# levelsCdb_cat = vcat(["Intercept"], 
+#                      levels(dfRefTG.Total_C_cat)[2:end],
+#                      levels(dfRefTG.Total_DB_cat)[2:end])
+
+levelsCdb_cat = vcat(levels(dfRefTG.Total_C_cat)[1:end],levels(dfRefTG.Total_DB_cat)[1:end])
+levelsCdb_cat
 
 
-CoefZcdbcat, CIZcdbcat, TstatZcdbcat, varZcdbcat = getCoefs(
-    mY, mX, mZcdb_cat;
-    hasXIntercept = true, hasZIntercept = true
-);
+# CoefZcdbcat, CIZcdbcat, TstatZcdbcat, varZcdbcat = getCoefs(mY, mX, mZcdb_cat);
+
+
+# +
+# Join unadjusted results
+# namesZtcdb = vcat(namesZtc[2:end], namesZdb[2:end])
+# CoefZtcdb  = hcat(CoefZtc[:, 2:end] , CoefZdb[:, 2:end])
+# CIZtcdb    = hcat(CIZtc[:, 2:end] , CIZdb[:, 2:end])
+# TstatZtcdb = hcat(TstatZtc[:, 2:end] , TstatZdb[:, 2:end])
+# varZtcdb   = hcat(varZtc[:, 2:end] , varZdb[:, 2:end])
 # -
 
 # Join unadjusted results
-namesZtcdb = vcat(namesZtc[2:end], namesZdb[2:end])
-CoefZtcdb  = hcat(CoefZtc[:, 2:end] , CoefZdb[:, 2:end])
-CIZtcdb    = hcat(CIZtc[:, 2:end] , CIZdb[:, 2:end])
-TstatZtcdb = hcat(TstatZtc[:, 2:end] , TstatZdb[:, 2:end])
-varZtcdb   = hcat(varZtc[:, 2:end] , varZdb[:, 2:end]);
+namesZtcdb = vcat(namesZtc[1:end], namesZdb[1:end])
+CoefZtcdb  = hcat(CoefZtc[:, 1:end] , CoefZdb[:, 1:end])
+CIZtcdb    = hcat(CIZtc[:, 1:end] , CIZdb[:, 1:end])
+TstatZtcdb = hcat(TstatZtc[:, 1:end] , TstatZdb[:, 1:end])
+varZtcdb   = hcat(varZtc[:, 1:end] , varZdb[:, 1:end])
 
 # +
 idx = 1
@@ -670,6 +885,69 @@ savefig("../../images/statin_mlmCI_unadjusted_Fish_Oil_carbon_count_and_degree_o
 
 p_ua
 # -
+
+# #### Full Dummy coding 
+
+# Apply MLM processing:
+
+# Design matrix Z
+mZcdb_cat = MatrixLM.design_matrix(
+	@mlmformula(0 + Total_C_cat + Total_DB_cat),
+	dfRefTG,
+	Dict(:Total_C_cat => StatsModels.DummyCoding(),
+         :Total_DB_cat => StatsModels.FullDummyCoding())
+) 
+
+mZcdb_cat[:, Not(9)] |> rank
+
+CoefZcdbcat, CIZcdbcat, TstatZcdbcat, varZcdbcat  = getCoefs(mY, mX, mZcdb_cat[:, Not(9)] ; hasXIntercept = true, hasZIntercept = false);
+
+levelsCdb_cat = vcat(lvls_c, lvls_db[2:end])
+
+# Join unadjusted results
+namesZtcdb = vcat(namesZtc[1:end], namesZdb[2:end])
+CoefZtcdb  = hcat(CoefZtc[:, 1:end] , CoefZdb[:, 2:end])
+CIZtcdb    = hcat(CIZtc[:, 1:end] , CIZdb[:, 2:end])
+TstatZtcdb = hcat(TstatZtc[:, 1:end] , TstatZdb[:, 2:end])
+varZtcdb   = hcat(varZtc[:, 1:end] , varZdb[:, 2:end])
+
+# +
+idx = 1
+idxColXmatCI = idxColXmat;
+p_ci_unadjusted = confidenceplot(
+                    CoefZtcdb[idxColXmatCI, :],	
+                    namesZtcdb,
+                    CIZtcdb[idxColXmatCI, :],
+                    xlabel = namesX[idxColXmatCI]*" Effect Size", legend = false,
+                    fontfamily = myfont,
+                    title = string("Unadjusted") , 
+                    titlefontsize = mytitlefontsize,
+                    yaxis = true, 
+                    right_margin = -10mm, 
+                    size=(400,300),  
+            )
+ptg_cdbcat_adjusted = confidenceplot(
+                        vec(permutedims(CoefZcdbcat[idxColXmatCI, 1:end])), 
+                        levelsCdb_cat[1:end],
+                        vec(permutedims(CIZcdbcat[idxColXmatCI, 1:end])),
+                        xlabel = namesX[idxColXmatCI]*" Effect Size", 
+                        # xlim = (-0.25,0.25),
+                        title = string("Adjusted") , 
+                        legend = false,
+                        fontfamily = myfont,
+                        titlefontsize = mytitlefontsize,
+                        yaxis = false, 
+                        left_margin = -20mm,
+)
+
+p_ua = plot(p_ci_unadjusted, ptg_cdbcat_adjusted, size = (750, 500)) 
+
+savefig("../../images/statin_mlmCI_unadjusted_Fish_Oil_carbon_count_and_degree_of_unsaturation_fomodel.svg")
+
+p_ua
+# -
+
+
 
 # ## Enrichment Analysis
 
@@ -751,24 +1029,25 @@ dfORA_db = ora_results(pval_fishoil, dfRefTG.Total_DB_cat, lvls_db, dfY, dfRefTG
 
 pval_fishoil_cat_adjusted = ccdf.(TDist(sampleN-1), abs.(TstatZcdbcat[2,:])).*2
 
-dfORA_compare = vcat(dfORA_tc[2:end, :], dfORA_db[2:end, :])
-dfORA_compare.Pval_MLM_adjusted = pval_fishoil_cat_adjusted[2:end];
+# +
+# dfORA_compare = vcat(dfORA_tc[1:end, :], dfORA_db[2:end, :])
+dfORA_compare = vcat(dfORA_tc[1:end, :], dfORA_db[1:end, :])
+
+dfORA_compare.Pval_MLM_adjusted = pval_fishoil_cat_adjusted[1:end];
 dfORA_compare
+# -
 
 pval_fishoil_db_cat_unadjusted = ccdf.(TDist(sampleN-1), abs.(TstatZdb[2,:])).*2;
 pval_fishoil_tc_cat_unadjusted = ccdf.(TDist(sampleN-1), abs.(TstatZtc[2,:])).*2;
 
 
 dfORA_compare.Pval_MLM_unadjusted = vcat(
-    pval_fishoil_tc_cat_unadjusted[2:end],
-    pval_fishoil_db_cat_unadjusted[2:end]
+    pval_fishoil_tc_cat_unadjusted[1:end],
+    # pval_fishoil_db_cat_unadjusted[2:end]
+    pval_fishoil_db_cat_unadjusted[1:end]
     )  
 
 dfORA_compare
-
-
-
-
 
 
 

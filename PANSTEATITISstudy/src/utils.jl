@@ -107,3 +107,43 @@ function pval2qval(mPvals::AbstractMatrix)
     
     return permutedims(mQvals)
 end
+
+
+"""
+    deviation_contrast_matrix(k::Integer, ref::Integer)
+
+Constructs a deviation contrast matrix for a given number of levels `k` 
+and a specified reference level `ref`.
+
+# Arguments
+- `k::Integer`: The total number of levels (columns in the resulting matrix).
+- `ref::Integer`: The reference level (row in the matrix where `-1` is inserted).
+
+# Returns
+- A matrix of size `k×(k-1)` where:
+  - All columns form an identity matrix (of size `(k-1)x(k-1)`),
+  - A row of `-1` is added at the reference level.
+
+# Example
+```julia
+julia> deviation_contrast_matrix(4, 2)
+4×3 Matrix{Float64}:
+  1.0   0.0   0.0
+ -1.0  -1.0  -1.0
+  0.0   1.0   0.0
+  0.0   0.0   1.0
+"""
+function deviation_contrast_matrix(k::Integer, ref::Integer)
+    mat = 1*Matrix(I, k-1, k-1)    
+    if ref == 1
+        return vcat(-1*ones(Int, 1, k-1), mat)
+    elseif ref == k
+        return vcat(mat , -1*ones(Int, 1, k-1))
+    else
+        return vcat(
+            mat[1:(ref-1), :],
+            -1*ones(Int, 1, k-1),
+            mat[(ref):end, :]
+        )     
+    end 
+end

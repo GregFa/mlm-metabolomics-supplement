@@ -7,9 +7,9 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.1
 #   kernelspec:
-#     display_name: Julia 1.11.1
+#     display_name: Julia 1.11.3
 #     language: julia
 #     name: julia-1.11
 # ---
@@ -21,14 +21,27 @@
 
 # ## Libraries
 
+using Pkg 
+
+Pkg.activate(joinpath(@__DIR__, "..", ".."))
+
+Pkg.instantiate()
+
 # To use RCall for the first time, one needs to 
 # the location of the R home directory.
 firstTimeRCall = false
-if firstTimeRCall 
+if firstTimeRCall
     using Pkg
-    ENV["R_HOME"] = "C:/PROGRA~1/R/R-42~1.1" # from R.home() in R
+    io = IOBuffer()
+    versioninfo(io)
+    if occursin("Windows", String(take!(io)))
+        ENV["R_HOME"] = "C:/PROGRA~1/R/R-43~1.1" # from R.home() in R
+    else 
+        ENV["R_HOME"] = "/usr/lib/R"
+
+    end
     Pkg.build("RCall")
-end     
+end      
 
 using DataFrames, CSV
 using FreqTables #, CategoricalArrays
@@ -228,6 +241,15 @@ dfClassification = fetch_properties(dfRef.Metabolite);
 # insertcols!(dfClassification, 1, :metabolite_name => dfRef.metabolite_name);
 first(dfClassification, 3)
 
+dfRef |> names
+
+dfClassification |> names
+
+# replace "-" by missing
+for c ∈ eachcol(dfClassification)
+           replace!(c, "-" => missing)
+end
+
 idxmissing = findall(ismissing.(dfClassification.main_class))
 dfRef.Metabolite[idxmissing]
 
@@ -269,6 +291,12 @@ dfRef
 dfClassification = fetch_properties(dfRef.StandardizedName);
 insertcols!(dfClassification, 1, :Metabolite => dfRef.Metabolite);
 first(dfClassification, 3)
+
+# replace "-" by missing
+for c ∈ eachcol(dfClassification)
+           replace!(c, "-" => missing)
+end
+
 idxmissing = findall(ismissing.(dfClassification.main_class))
 dfRef.StandardizedName[idxmissing]
 
@@ -276,9 +304,23 @@ dfRef.StandardizedName[idxmissing]
 # We will filter *PMe(16:0/18:1)* (phosphatidylmethanol) [5] and *ZyE(22:5)*.
 #
 
+dfRef |> names
+
+dfClassification |> names
+
 dfRef = leftjoin(dfRef, dfClassification, on = :Metabolite); size(dfRef)
+
 # filter
-deleteat!(dfRef, idxmissing[[2,3]]);
+# deleteat!(dfRef, idxmissing[[2,3]]);
+deleteat!(dfRef, idxmissing[[5,11]]);
+
+dfRef.sub_class |> unique
+
+?skipmissing
+
+findall(occursin.("PE-NMe2", skipmissing(dfRef.sub_class)))
+
+skipmissing(dfRef.sub_class)[29]
 
 # ### Use GOSLIN
 
