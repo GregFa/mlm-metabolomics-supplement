@@ -208,8 +208,9 @@ end
 Returns coefficients, confidence of interval, T-stats.
 
 """
-function getcoeffs_mlm(Y, X, Z)
-    coef, ci, tstats, var = getCoefs(Y, X, Z);
+function getcoeffs_mlm(Y, X, Z; hasXIntercept = true, hasZIntercept = true)
+    coef, ci, tstats, var = getCoefs(Y, X, Z; 
+        hasXIntercept = hasXIntercept, hasZIntercept = hasZIntercept);
     
     return MLMCoeffs(coef, ci, tstats, var)    
 end

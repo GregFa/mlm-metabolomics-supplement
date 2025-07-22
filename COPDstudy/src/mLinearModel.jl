@@ -38,15 +38,18 @@ Functions list
 """
 **getCoefs** -*Function*.
 
-    getCoefs(dfInput::DataFrame, Zin::Array{Float64,2}; 
-                    responseSelection = [""],
-                    isunpaired::Bool = true,
-                    hasFishOil::Bool = true) => Array{Float,2}, Array{Float,2}, Array{Float,2}
+getCoefsgetCoefs(
+        Y::AbstractMatrix, 
+        X::AbstractMatrix, 
+        Zin::AbstractMatrix; 
+        zcritical = 1.96,
+        hasXIntercept = true, hasZIntercept = true) => Array{Float,2}, Array{Float,2}, Array{Float,2}, Array{Float,2}
 
-Returns coefficients, confidence of interval, T-stats.
+Returns coefficients, confidence of interval, T-stats and variance.
 
 """
-function getCoefs(Y::AbstractMatrix, X::AbstractMatrix, Zin::AbstractMatrix)
+function getCoefs(Y::AbstractMatrix, X::AbstractMatrix, Zin::AbstractMatrix; 
+    zcritical = 1.96, hasXIntercept = true, hasZIntercept = true)
        
     
     #########
@@ -54,10 +57,10 @@ function getCoefs(Y::AbstractMatrix, X::AbstractMatrix, Zin::AbstractMatrix)
     #########
     
     # Construct a RawData object
-    dat = RawData(Response(Y), Predictors(X,Zin));
+    dat = RawData(Response(Y), Predictors(X,Zin, hasXIntercept, hasZIntercept));
 
     # Estimate coefficients
-    est = mlm(dat, hasXIntercept=false, hasZIntercept= false);
+    est = mlm(dat, addXIntercept = hasXIntercept, addZIntercept = hasZIntercept);
    
     # get estimate
     estCoefOut = MatrixLM.coef(est);
@@ -66,10 +69,10 @@ function getCoefs(Y::AbstractMatrix, X::AbstractMatrix, Zin::AbstractMatrix)
     σ² = est.varB
     # get SE
     SE = sqrt.(σ²)
-    CIOut = SE.*1.96
+    CIOut = SE.*zcritical
     
     # get T-statistics
-    tStatsOut = t_stat(est)
+    tStatsOut = t_stat(est, true)
     
     return estCoefOut, CIOut, tStatsOut, σ² 
 end
